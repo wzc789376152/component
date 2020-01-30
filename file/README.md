@@ -15,7 +15,8 @@
 [项目引用](https://search.maven.org/artifact/com.github.wzc789376152/file)
 目前最新可用版本：1.0.2
 
-实现 IFileService 接口，实现类 FileServiceImpl；
+###IFileService 接口
+实现类 FileServiceImpl；协调FileManager实现文件操作；配置FileProperties以及FileManager
 
 例如：
 
@@ -37,6 +38,38 @@
             }
         };
         
+|方法|参数|返回值|说明|
+|----|----|----|----|
+|`FileProperties getProperties()`|无|`FileProperties`：文件配置|返回文件配置方法|
+|`IFileManager getFileManager()`|无|`IFileManager`：文件管理器|返回文件管理器方法|
+|`List<String> getFileNameList() throws IOException`|无|`List<String>`：文件名集合|返回文件夹所有文件名方法|
+|`void uploadCache(InputStream inputStream, String filename) throws IOException`|`inputStream`：输入文件流  `filename`：文件名|无|上传临时文件方法|
+|`void submit(String filename) throws IOException`|`filename`：文件名|无|将临时文件持久化方法|
+|`void download(String fileName, OutputStream outputStream) throws IOException`|`fileName`：文件名  `outputStream`：输出文件流|无|下载文件方法|
+|`void delete(String filename) throws IOException`|`filename`：文件名|无|删除文件方法|
+
+###IFileManager
+提供两个实现类；用于实现实际文件操作
+>LocalFileManager
+
+    LocalProperties localProperties = new LocalProperties();
+    localProperties.setWorkDir("workDir");
+    IFileManager fileManager = new LocalFileMananger(localProperties);
+                
+>FtpFileManager
+
+    FtpProperties ftpProperties = new FtpProperties();
+    ftpProperties.setWorkDir("workDir");
+    IFileManager fileManager = new FtpFileManager(ftpProperties);
+    
+|方法|参数|返回值|说明|
+|----|----|----|----|
+|`void init(FileProperties fileProperties)`|`fileProperties`：文件配置|无|初始化方法|
+|`List<String> getAllFilesName()`|无|`List<String>`：文件名集合|返回文件夹所有文件名方法|
+|`void upload(String filename, InputStream inputStream) throws IOException`|`filename`：文件名  `inputStream`：输入文件流|无|文件上传方法|
+|`void download(String filename, OutputStream outputStream) throws IOException`|`filename`：文件名  `outputStream`：输出文件流|无|文件下载方法|
+|`void delete(String filename) throws IOException`|`filename`：文件名|无|文件删除方法|
+
 ##参数说明
 
 ###FileProperties
