@@ -1,0 +1,1 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=com.wzc.springboot.file.config.FileConfiguration,com.wzc.springboot.file.config.FtpFileConfiguration,com.wzc.springboot.file.config.LocalFileConfiguration
