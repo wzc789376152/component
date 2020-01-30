@@ -28,7 +28,7 @@
 [项目引用](https://search.maven.org/artifact/com.github.wzc789376152/file)
 目前最新可用版本：[1.0.2](https://search.maven.org/artifact/com.github.wzc789376152/file/1.0.2/jar)
 
-SpringBoot项目[使用说明](https://github.com/wzc789376152/component/tree/master/filespringbootstarter)
+SpringBoot项目[使用说明](https://github.com/wzc789376152/component/blob/master/filespringbootstarter/README.md#java-%E6%96%87%E4%BB%B6%E5%A4%84%E7%90%86%E7%BB%84%E4%BB%B6springboot)
 ### IFileService接口
 实现类 FileServiceImpl；协调FileManager实现文件操作；配置FileProperties以及FileManager
 

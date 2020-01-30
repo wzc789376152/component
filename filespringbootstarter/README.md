@@ -1,6 +1,6 @@
 # Java 文件处理组件(SpringBoot)
 
-[详细说明](https://github.com/wzc789376152/component/tree/master/file)
+[详细说明](https://github.com/wzc789376152/component/blob/master/file/README.md#java-%E6%96%87%E4%BB%B6%E5%A4%84%E7%90%86%E7%BB%84%E4%BB%B6)
 
 ## 使用说明
 [项目引用](https://search.maven.org/artifact/com.github.wzc789376152/file-springboot-starter)
@@ -35,4 +35,4 @@ application.yml文件配置
           max-wait-millis: 300
           work-dir: images
           
-详细参数参考[参数说明](https://github.com/wzc789376152/component/tree/master/file#%E5%8F%82%E6%95%B0%E8%AF%B4%E6%98%8E)
+详细参数参考[参数说明](https://github.com/wzc789376152/component/blob/master/file/README.md#%E5%8F%82%E6%95%B0%E8%AF%B4%E6%98%8E)
