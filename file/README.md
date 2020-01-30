@@ -1,5 +1,5 @@
 # Java 文件处理组件
->[简介](https://github.com/wzc789376152/component/tree/master/file#简介)  
+>[简介](#简介)  
 >[使用说明](https://github.com/wzc789376152/component/tree/master/file#使用说明)  
 >[参数说明](https://github.com/wzc789376152/component/tree/master/file#参数说明)  
 >[二开说明](https://github.com/wzc789376152/component/tree/master/file#二开说明)  
