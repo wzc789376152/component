@@ -6,7 +6,7 @@
 
     <groupId>com.github.wzc789376152</groupId>
     <artifactId>file-springboot-starter</artifactId>
-    <version>1.0</version>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
     <dependencies>
         <dependency>
