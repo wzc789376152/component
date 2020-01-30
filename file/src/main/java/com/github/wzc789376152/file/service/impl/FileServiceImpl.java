@@ -32,25 +32,12 @@ public abstract class FileServiceImpl implements IFileService {
         return System.getProperty("user.dir") + (getProperties() != null ? (getProperties().getProject() != null ? (File.separator + getProperties().getProject() + File.separator) : File.separator) : File.separator) + "cache" + File.separator;
     }
 
-    /**
-     * 获取文件配置
-     *
-     * @return
-     */
     @Override
     public abstract FileProperties getProperties();
 
-    /**
-     * 获取文件管理器
-     *
-     * @return
-     */
     @Override
     public abstract IFileManager getFileManager();
 
-    /**
-     * 文件管理器
-     */
     protected IFileManager fileManager;
 
     /**
@@ -81,11 +68,6 @@ public abstract class FileServiceImpl implements IFileService {
         fileManager.init(fileProperties);
     }
 
-    /**
-     * 初始化方法
-     *
-     * @param fileProperties
-     */
     private void init(FileProperties fileProperties) {
         isTemp = fileProperties.getTemporary();
         isCache = fileProperties.getCache();
@@ -139,11 +121,6 @@ public abstract class FileServiceImpl implements IFileService {
         }
     }
 
-    /**
-     * 清理临时文件线程任务
-     *
-     * @return
-     */
     private boolean deleteTemp() {
         File file = new File(getTemporaryDir());
         File[] files = file.listFiles();
@@ -271,11 +248,6 @@ public abstract class FileServiceImpl implements IFileService {
         }
     }
 
-    /**
-     * 获取所有文件的文件名
-     *
-     * @return
-     */
     @Override
     public List<String> getFileNameList() {
         List<String> fileList = fileManager.getAllFilesName();
@@ -283,13 +255,6 @@ public abstract class FileServiceImpl implements IFileService {
     }
 
 
-    /**
-     * 上传文件：仅上传到临时文件夹，通过submit方法将其持久化
-     *
-     * @param inputStream
-     * @param filename
-     * @throws IOException
-     */
     @Override
     public void uploadCache(InputStream inputStream, String filename) throws IOException {
         if (isTemp) {
@@ -311,12 +276,7 @@ public abstract class FileServiceImpl implements IFileService {
         }
     }
 
-    /**
-     * 文件持久化方法
-     *
-     * @param filename
-     * @throws IOException
-     */
+
     @Override
     public void submit(String filename) throws IOException {
         if (isCache) {
@@ -343,12 +303,6 @@ public abstract class FileServiceImpl implements IFileService {
         }
     }
 
-    /**
-     * 下载文件，若临时文件存在，则从临时文件夹下载，若不存在，从文件来源处下载，并缓存至临时文件夹
-     *
-     * @param fileName FTP服务器中的文件名
-     * @Version1.0
-     */
     @Override
     public void download(String fileName, OutputStream outputStream) throws IOException {
         if (isTemp) {

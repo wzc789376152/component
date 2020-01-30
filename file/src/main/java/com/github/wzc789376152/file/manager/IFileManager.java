@@ -15,40 +15,40 @@ public interface IFileManager {
     /**
      * 初始化方法
      *
-     * @param fileProperties
+     * @param fileProperties 文件配置
      */
     void init(FileProperties fileProperties);
 
     /**
      * 获取所有文件的文件名
      *
-     * @return
+     * @return 文件名集合
      */
     List<String> getAllFilesName();
 
     /**
      * 文件上传
      *
-     * @param filename
-     * @param inputStream
-     * @throws IOException
+     * @param filename 文件名
+     * @param inputStream 输入文件stream
+     * @throws IOException 抛出文件异常
      */
     void upload(String filename, InputStream inputStream) throws IOException;
 
     /**
      * 文件下载
      *
-     * @param filename
-     * @param outputStream
-     * @throws IOException
+     * @param filename 文件名
+     * @param outputStream 输出文件stream
+     * @throws IOException 抛出文件异常
      */
     void download(String filename, OutputStream outputStream) throws IOException;
 
     /**
      * 文件删除
      *
-     * @param filename
-     * @throws IOException
+     * @param filename 文件名
+     * @throws IOException 抛出文件异常
      */
     void delete(String filename) throws IOException;
 }
