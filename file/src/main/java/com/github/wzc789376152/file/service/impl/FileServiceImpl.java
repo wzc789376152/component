@@ -59,10 +59,10 @@ public abstract class FileServiceImpl implements IFileService {
     private final String CACHESUFFIX = ".cache";
 
     //缓存文件队列
-    private Set<String> cacheDownloadFileSet = new HashSet<>();
+    private Set<String> cacheDownloadFileSet = new HashSet<String>();
 
     //上传文件队列
-    private Set<String> cacheUploadFileSet = new HashSet<>();
+    private Set<String> cacheUploadFileSet = new HashSet<String>();
 
     private boolean isTemp = true;
 
