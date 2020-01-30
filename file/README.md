@@ -1,4 +1,10 @@
 # Java 文件处理组件
+>[简介](https://github.com/wzc789376152/component/tree/master/file#简介)
+>[使用说明](https://github.com/wzc789376152/component/tree/master/file#使用说明)
+>[参数说明](https://github.com/wzc789376152/component/tree/master/file#参数说明)
+>[二开说明](https://github.com/wzc789376152/component/tree/master/file#二开说明)
+
+## 简介
 
 为方便项目进行文件保存、下载、删除操作编写的组件。
 
@@ -13,8 +19,9 @@
 ## 使用说明
 
 [项目引用](https://search.maven.org/artifact/com.github.wzc789376152/file)
-目前最新可用版本：1.0.2
+目前最新可用版本：[1.0.2](https://search.maven.org/artifact/com.github.wzc789376152/file/1.0.2/jar)
 
+SpringBoot项目[使用说明](https://github.com/wzc789376152/component/tree/master/filespringbootstarter)
 ### IFileService 接口
 实现类 FileServiceImpl；协调FileManager实现文件操作；配置FileProperties以及FileManager
 
