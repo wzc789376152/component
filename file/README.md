@@ -1,8 +1,8 @@
 # Java 文件处理组件
 >[简介](#简介)  
 >[使用说明](#使用说明)  
->>[IFileService 接口](#IFileService)  
->>[IFileManager 接口](#IFileManager)  
+>>[IFileService接口](#IFileService接口)  
+>>[IFileManager接口](#IFileManager接口)  
 >
 >[参数说明](#参数说明)  
 >>[FileProperties](#FileProperties)  
