@@ -10,12 +10,12 @@
 
 减少用户文件保存响应时间。
 
-##使用说明
+## 使用说明
 
 [项目引用](https://search.maven.org/artifact/com.github.wzc789376152/file)
 目前最新可用版本：1.0.2
 
-###IFileService 接口
+### IFileService 接口
 实现类 FileServiceImpl；协调FileManager实现文件操作；配置FileProperties以及FileManager
 
 例如：
@@ -48,7 +48,7 @@
 |`void download(String fileName, OutputStream outputStream) throws IOException`|`fileName`：文件名  `outputStream`：输出文件流|无|下载文件方法|
 |`void delete(String filename) throws IOException`|`filename`：文件名|无|删除文件方法|
 
-###IFileManager
+### IFileManager
 提供两个实现类；用于实现实际文件操作
 >LocalFileManager
 
@@ -70,9 +70,9 @@
 |`void download(String filename, OutputStream outputStream) throws IOException`|`filename`：文件名  `outputStream`：输出文件流|无|文件下载方法|
 |`void delete(String filename) throws IOException`|`filename`：文件名|无|文件删除方法|
 
-##参数说明
+## 参数说明
 
-###FileProperties
+### FileProperties
 
 |  参数   | 说明  |
 |  ----  | ----  |
@@ -84,14 +84,14 @@
 | isCache  | 是否使用文件缓存，默认关闭，使用缓存前提是使用临时文件 |
 | isTemporary  | 是否使用临时文件，默认关闭 |
 
-###LocalProperties
+### LocalProperties
 
 |  参数   | 说明  |
 |  ----  | ----  |
 | workDir  | 保存文件夹 |
 | encoding  | 编码格式 |
 
-###FtpProperties
+### FtpProperties
 
 |  参数   | 说明  |
 |  ----  | ----  |
@@ -107,4 +107,4 @@
 | maxIdle  | 最大空闲连接 |
 | maxWaitMillis  | 请求连接最大等待时间(毫秒) |
 
-##二开说明
+## 二开说明
