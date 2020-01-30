@@ -1,8 +1,15 @@
 # Java 文件处理组件
 >[简介](#简介)  
->[使用说明](https://github.com/wzc789376152/component/tree/master/file#使用说明)  
->[参数说明](https://github.com/wzc789376152/component/tree/master/file#参数说明)  
->[二开说明](https://github.com/wzc789376152/component/tree/master/file#二开说明)  
+>[使用说明](#使用说明)  
+>>[IFileService 接口](#IFileService)  
+>>[IFileManager 接口](#IFileManager)  
+>
+>[参数说明](#参数说明)  
+>>[FileProperties](#FileProperties)  
+>>[LocalProperties](#LocalProperties)  
+>>[FtpProperties](#FtpProperties)  
+>
+>[二开说明](#二开说明)  
 
 ## 简介
 
@@ -22,7 +29,7 @@
 目前最新可用版本：[1.0.2](https://search.maven.org/artifact/com.github.wzc789376152/file/1.0.2/jar)
 
 SpringBoot项目[使用说明](https://github.com/wzc789376152/component/tree/master/filespringbootstarter)
-### IFileService 接口
+### IFileService接口
 实现类 FileServiceImpl；协调FileManager实现文件操作；配置FileProperties以及FileManager
 
 例如：
@@ -55,7 +62,7 @@ SpringBoot项目[使用说明](https://github.com/wzc789376152/component/tree/ma
 |`void download(String fileName, OutputStream outputStream) throws IOException`|`fileName`：文件名  `outputStream`：输出文件流|无|下载文件方法|
 |`void delete(String filename) throws IOException`|`filename`：文件名|无|删除文件方法|
 
-### IFileManager
+### IFileManager接口
 提供两个实现类；用于实现实际文件操作
 >LocalFileManager
 
