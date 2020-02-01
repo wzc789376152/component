@@ -106,7 +106,6 @@ SpringBoot项目[使用说明](https://github.com/wzc789376152/component/blob/ma
 | username  | ftp用户名 |
 | password  | ftp密码 |
 | encoding  | 编码格式 |
-| root  | 远程ftp服务器根目录 |
 | maxTotal  | 最大连接数 |
 | minIdel  | 最小空闲连接 |
 | maxIdle  | 最大空闲连接 |
