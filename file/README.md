@@ -6,7 +6,6 @@
 >
 >[参数说明](#参数说明)  
 >>[FileProperties](#FileProperties)  
->>[LocalProperties](#LocalProperties)  
 >>[FtpProperties](#FtpProperties)  
 >
 >[二开说明](#二开说明)  
@@ -26,31 +25,29 @@
 ## 使用说明
 
 [项目引用](https://search.maven.org/artifact/com.github.wzc789376152/file)
-目前最新可用版本：[1.0.2](https://search.maven.org/artifact/com.github.wzc789376152/file/1.0.2/jar)
+目前最新可用版本：[1.0.3](https://search.maven.org/artifact/com.github.wzc789376152/file/1.0.3/jar)
 
 SpringBoot项目[使用说明](https://github.com/wzc789376152/component/blob/master/filespringbootstarter/README.md#java-%E6%96%87%E4%BB%B6%E5%A4%84%E7%90%86%E7%BB%84%E4%BB%B6springboot)
 ### IFileService接口
-实现类 FileServiceImpl；协调FileManager实现文件操作；配置FileProperties以及FileManager
+抽象类 FileServiceAbstract；协调FileManager实现文件操作；配置FileProperties以及FileManager
 
 例如：
 
-    IFileService fileService = new FileServiceImpl() {
-            @Override
-            public FileProperties getProperties() {
-                FileProperties fileProperties = new FileProperties();
-                fileProperties.setType("local");
-                fileProperties.setCache(true);
-                fileProperties.setTemporary(true);
-                return null;
-            }         
-            @Override
-            public IFileManager getFileManager() {
-                LocalProperties localProperties = new LocalProperties();
-                localProperties.setWorkDir("workDir");
-                IFileManager fileManager = new LocalFileMananger(localProperties);
-                return fileManager;
-            }
-        };
+    IFileService fileService = new FileServiceAbstract() {
+                @Override
+                public FileProperties getProperties() {
+                    FileProperties fileProperties = new FileProperties();
+                    fileProperties.setProject("fileDemo");
+                    fileProperties.setWorkDir("temp");
+                    return fileProperties;
+                }
+    
+                @Override
+                public IFileManager getFileManager() {
+                    IFileManager fileManager = new LocalFileManangerAbstract();
+                    return fileManager;
+                }
+            };
         
 |方法|参数|返回值|说明|
 |----|----|----|----|
@@ -63,18 +60,20 @@ SpringBoot项目[使用说明](https://github.com/wzc789376152/component/blob/ma
 |`void delete(String filename) throws IOException`|`filename`：文件名|无|删除文件方法|
 
 ### IFileManager接口
-提供两个实现类；用于实现实际文件操作
->LocalFileManager
+提供两个抽象类；用于实现实际文件操作
+>LocalFileManagerAbstract
 
-    LocalProperties localProperties = new LocalProperties();
-    localProperties.setWorkDir("workDir");
-    IFileManager fileManager = new LocalFileMananger(localProperties);
+    IFileManager fileManager = new LocalFileManangerAbstract();
                 
->FtpFileManager
+>FtpFileManagerAbstract
 
-    FtpProperties ftpProperties = new FtpProperties();
-    ftpProperties.setWorkDir("workDir");
-    IFileManager fileManager = new FtpFileManager(ftpProperties);
+    IFileManager fileManager = new FtpFileManagerAbstract() {
+                        @Override
+                        public FtpProperties ftpProperties() {
+                            FtpProperties ftpProperties = new FtpProperties();
+                            return ftpProperties;
+                        }
+                    };
     
 |方法|参数|返回值|说明|
 |----|----|----|----|
@@ -90,20 +89,13 @@ SpringBoot项目[使用说明](https://github.com/wzc789376152/component/blob/ma
 
 |  参数   | 说明  |
 |  ----  | ----  |
-| type  | 文件处理方式（1、local；2、ftp） |
 | taskStartTime  | 临时文件清理时间：0-24小时;-1 立即开始 |
 | taskPeriod  | 临时文件清理周期 |
 | taskUnit  | 临时文件清理周期单位，1、year：每n年；2、month：每n月；3、day：每n天，默认为每天清理 |
 | project  | 项目名，用来区分保存文件的项目文件夹 |
+| workDir  | 保存文件的文件夹 |
 | isCache  | 是否使用文件缓存，默认关闭，使用缓存前提是使用临时文件 |
 | isTemporary  | 是否使用临时文件，默认关闭 |
-
-### LocalProperties
-
-|  参数   | 说明  |
-|  ----  | ----  |
-| workDir  | 保存文件夹 |
-| encoding  | 编码格式 |
 
 ### FtpProperties
 
@@ -113,12 +105,12 @@ SpringBoot项目[使用说明](https://github.com/wzc789376152/component/blob/ma
 | port  | ftp服务器端口 |
 | username  | ftp用户名 |
 | password  | ftp密码 |
-| workDir  | 保存文件夹 |
 | encoding  | 编码格式 |
 | root  | 远程ftp服务器根目录 |
 | maxTotal  | 最大连接数 |
 | minIdel  | 最小空闲连接 |
 | maxIdle  | 最大空闲连接 |
 | maxWaitMillis  | 请求连接最大等待时间(毫秒) |
+| enable  | 是否开启ftp |
 
 ## 二开说明

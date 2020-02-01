@@ -4,6 +4,7 @@ import com.github.wzc789376152.file.FileProperties;
 import com.github.wzc789376152.file.manager.IFileManager;
 import com.github.wzc789376152.file.service.IFileService;
 import com.github.wzc789376152.file.task.TimerConfiguration;
+import com.sun.xml.internal.ws.util.StringUtils;
 
 import java.io.*;
 import java.nio.channels.FileChannel;
@@ -20,7 +21,7 @@ import java.util.stream.Collectors;
  *
  * @author weizhenchen
  */
-public abstract class FileServiceImpl implements IFileService {
+public abstract class FileServiceAbstract implements IFileService {
     Logger logger = Logger.getLogger(IFileService.class.getName());
 
 
@@ -38,7 +39,7 @@ public abstract class FileServiceImpl implements IFileService {
     @Override
     public abstract IFileManager getFileManager();
 
-    protected IFileManager fileManager;
+    private IFileManager fileManager;
 
     /**
      * 缓存文件后缀，该文件用于重启服务器后，继续之前的缓存任务用
@@ -56,10 +57,16 @@ public abstract class FileServiceImpl implements IFileService {
     private boolean isCache = true;
 
 
-    public FileServiceImpl() {
+    public FileServiceAbstract() {
         FileProperties fileProperties = getProperties();
         if (fileProperties == null) {
-            fileProperties = new FileProperties();
+            throw new NullPointerException("未设置参数：fileProperties");
+        }
+        if (fileProperties.getProject() == null || fileProperties.getProject().equals("")) {
+            throw new NullPointerException("未设置参数：fileProperites.project");
+        }
+        if (fileProperties.getWorkDir() == null || fileProperties.getWorkDir().equals("")) {
+            throw new NullPointerException("未设置参数：fileProperites.workDir");
         }
         init(fileProperties);
         if (fileManager == null) {

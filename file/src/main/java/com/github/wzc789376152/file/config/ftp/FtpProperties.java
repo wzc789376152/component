@@ -18,17 +18,9 @@ public class FtpProperties {
      */
     protected String password;
     /**
-     * 保存文件夹
-     */
-    protected String workDir = "temp";
-    /**
      * 编码格式
      */
     protected String encoding;
-    /**
-     * 远程ftp服务器根目录
-     */
-    protected String root = "/";
     /**
      * 最大连接数
      */
@@ -45,6 +37,10 @@ public class FtpProperties {
      * 请求连接最大等待时间(毫秒)
      */
     protected int maxWaitMillis = 3000;
+    /**
+     * 是否启用
+     */
+    private boolean enable;
 
     public String getHost() {
         return host;
@@ -62,14 +58,6 @@ public class FtpProperties {
         this.port = port;
     }
 
-
-    public String getWorkDir() {
-        return workDir;
-    }
-
-    public void setWorkDir(String workDir) {
-        this.workDir = workDir;
-    }
 
     public String getEncoding() {
         return encoding;
@@ -127,11 +115,11 @@ public class FtpProperties {
         this.password = password;
     }
 
-    public String getRoot() {
-        return root;
+    public boolean isEnable() {
+        return enable;
     }
 
-    public void setRoot(String root) {
-        this.root = root;
+    public void setEnable(boolean enable) {
+        this.enable = enable;
     }
 }

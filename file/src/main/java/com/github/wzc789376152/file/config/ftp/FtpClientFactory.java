@@ -61,16 +61,6 @@ public class FtpClientFactory implements PooledObjectFactory<FTPClient> {
             ftpClient.setControlEncoding(properties.getEncoding());
         }
         ftpClient.setFileType(FTP.BINARY_FILE_TYPE);//设置上传文件类型为二进制，否则将无法打开文件
-        if (properties.getWorkDir().endsWith(File.separator)) {
-            properties.setWorkDir(properties.getWorkDir().substring(0, properties.getWorkDir().length() - 1));
-        }
-        properties.setWorkDir(properties.getWorkDir().replace(File.separator, "/"));
-        //初始化保存路径
-        if (!ftpClient.changeWorkingDirectory(properties.getWorkDir())) {
-            if (ftpClient.makeDirectory(properties.getWorkDir())) {
-                ftpClient.changeWorkingDirectory(properties.getWorkDir());
-            }
-        }
     }
 
     //钝化连接，使链接变为可用状态
@@ -78,7 +68,7 @@ public class FtpClientFactory implements PooledObjectFactory<FTPClient> {
     public void passivateObject(PooledObject<FTPClient> pooledObject) throws Exception {
         FTPClient ftpClient = pooledObject.getObject();
         try {
-            ftpClient.changeWorkingDirectory(properties.getRoot());
+            ftpClient.changeWorkingDirectory("/");
             ftpClient.logout();
             if (ftpClient.isConnected()) {
                 ftpClient.disconnect();

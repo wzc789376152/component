@@ -2,45 +2,41 @@ package com.github.wzc789376152.file.manager.local;
 
 import com.github.wzc789376152.file.utils.FilePathUtils;
 import com.github.wzc789376152.file.FileProperties;
-import com.github.wzc789376152.file.config.local.LocalProperties;
 import com.github.wzc789376152.file.manager.IFileManager;
 
 import java.io.*;
 import java.nio.channels.FileChannel;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public class LocalFileMananger implements IFileManager {
-    private LocalProperties localProperties;
-
-    public LocalFileMananger(LocalProperties localProperties) {
-        this.localProperties = localProperties;
-    }
+public class LocalFileManangerAbstract implements IFileManager {
+    Logger logger = Logger.getLogger(IFileManager.class.getName());
+    private FileProperties fileProperties;
 
     @Override
     public void init(FileProperties fileProperties) {
-        if (localProperties == null) {
-            localProperties = new LocalProperties();
-        }
+        logger.info("use localFileManager");
         //创建服务器文件夹；需要服务器权限
-        localProperties.setWorkDir(System.getProperty("user.dir") + (fileProperties.getProject() == null ? "" : (File.separator + fileProperties.getProject())) + FilePathUtils.formatPath(localProperties.getWorkDir()));
-        File file = new File(localProperties.getWorkDir());
+        fileProperties.setWorkDir(System.getProperty("user.dir") + (fileProperties.getProject() == null ? "" : (File.separator + fileProperties.getProject())) + FilePathUtils.formatPath(fileProperties.getWorkDir()));
+        File file = new File(fileProperties.getWorkDir());
         if (!file.exists()) {
             file.mkdirs();
         }
+        this.fileProperties = fileProperties;
     }
 
     @Override
     public List<String> getAllFilesName() {
-        File file1 = new File(localProperties.getWorkDir());
+        File file1 = new File(fileProperties.getWorkDir());
         File[] tempList1 = file1.listFiles();
         return Arrays.stream(tempList1).filter(file -> file.isFile()).map(File::getName).collect(Collectors.toList());
     }
 
     @Override
     public void upload(String filename, InputStream inputStream) throws IOException {
-        File dest = new File(localProperties.getWorkDir() + filename);
+        File dest = new File(fileProperties.getWorkDir() + filename);
         FileChannel inputChannel = null;
         FileChannel outputChannel = null;
         try {
@@ -56,7 +52,7 @@ public class LocalFileMananger implements IFileManager {
     @Override
     public void download(String filename, OutputStream outputStream) throws IOException {
         InputStream inputStream;
-        File file = new File(localProperties.getWorkDir() + filename);
+        File file = new File(fileProperties.getWorkDir() + filename);
         if (!file.exists()) {
             throw new IOException("文件不存在！");
         }
@@ -74,7 +70,7 @@ public class LocalFileMananger implements IFileManager {
 
     @Override
     public void delete(String filename) throws IOException {
-        File file = new File(localProperties.getWorkDir() + filename);
+        File file = new File(fileProperties.getWorkDir() + filename);
         if (file.exists()) {
             file.delete();
         }

@@ -5,11 +5,11 @@ package com.github.wzc789376152.file;
  * 可继承该类，对其进行拓展
  */
 public class FileProperties {
-    private String type = "local";//文件处理方式
     private Integer taskStartTime = 4;//临时文件清理时间：0-24小时;-1 立即开始
     private Integer taskPeriod = 1;//临时文件清理周期
     private String taskUnit = "day";//临时文件清理周期单位，1、year：每n年；2、month：每n月；3、day：每n天，默认为每天清理
     private String project;//项目名，用来区分保存文件的项目文件夹
+    private String workDir;//保存文件夹
     private Boolean isCache = false;//是否使用文件缓存，默认关闭，使用缓存前提是使用临时文件
     private Boolean isTemporary = false;//是否使用临时文件，默认关闭
 
@@ -61,11 +61,11 @@ public class FileProperties {
         this.taskUnit = taskUnit;
     }
 
-    public String getType() {
-        return type;
+    public String getWorkDir() {
+        return workDir;
     }
 
-    public void setType(String type) {
-        this.type = type;
+    public void setWorkDir(String workDir) {
+        this.workDir = workDir;
     }
 }

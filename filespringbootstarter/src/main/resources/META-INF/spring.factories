@@ -1,1 +1,1 @@
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=com.github.wzc789376152.file.config.FileConfiguration,com.github.wzc789376152.file.config.FtpFileConfiguration,com.github.wzc789376152.file.config.LocalFileConfiguration
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=com.github.wzc789376152.file.config.FileConfiguration,com.github.wzc789376152.file.config.FtpFileConfiguration

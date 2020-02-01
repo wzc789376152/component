@@ -4,7 +4,7 @@
 
 ## 使用说明
 [项目引用](https://search.maven.org/artifact/com.github.wzc789376152/file-springboot-starter)
-目前最新可用版本：[1.0.2](https://search.maven.org/artifact/com.github.wzc789376152/file-springboot-starter/1.0.2/jar)
+目前最新可用版本：[1.0.3](https://search.maven.org/artifact/com.github.wzc789376152/file-springboot-starter/1.0.3/jar)
 
 ## 配置说明
 application.yml文件配置
@@ -14,17 +14,17 @@ application.yml文件配置
     spring:
       cqfile:
         type: local
-        project: salehosing
+        project: fileDemo
+        work-dir: images
         temporary: true
-        local:
-          work-dir: images
 
 ### Ftp
 
     spring:
       cqfile:
         type: ftp
-        project: salehosing
+        project: fileDemo
+        work-dir: images
         cache: true
         temporary: true
         ftp:
@@ -33,6 +33,5 @@ application.yml文件配置
           host: yangmh.top
           encoding: UTF-8
           max-wait-millis: 300
-          work-dir: images
           
 详细参数参考[参数说明](https://github.com/wzc789376152/component/blob/master/file/README.md#%E5%8F%82%E6%95%B0%E8%AF%B4%E6%98%8E)

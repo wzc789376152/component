@@ -2,36 +2,57 @@ package com.github.wzc789376152.file.manager.ftp;
 
 import com.github.wzc789376152.file.FileProperties;
 import com.github.wzc789376152.file.config.ftp.FtpClientFactory;
+import com.github.wzc789376152.file.config.ftp.FtpPool;
 import com.github.wzc789376152.file.config.ftp.FtpProperties;
 import com.github.wzc789376152.file.manager.IFileManager;
 import com.github.wzc789376152.file.utils.FilePathUtils;
-import com.github.wzc789376152.file.config.ftp.FtpPool;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public class FtpFileManager implements IFileManager {
+public abstract class FtpFileManagerAbstract implements IFileManager {
+    Logger logger = Logger.getLogger(IFileManager.class.getName());
     private FtpProperties ftpProperties;
     private FtpPool ftpPool;
 
-    public FtpFileManager(FtpProperties ftpProperties) {
-        this.ftpProperties = ftpProperties;
-    }
+    public abstract FtpProperties ftpProperties();
 
     @Override
     public void init(FileProperties fileProperties) {
+        logger.info("use ftpFileManager");
         if (ftpProperties == null) {
-            throw new RuntimeException("未进行ftp配置");
+            ftpProperties = ftpProperties();
+            if(ftpProperties == null) {
+                throw new RuntimeException("未进行ftp配置");
+            }
         }
-        ftpProperties.setWorkDir(FilePathUtils.formatPath(ftpProperties.getWorkDir()));
+        fileProperties.setWorkDir(FilePathUtils.formatPath(fileProperties.getWorkDir()));
         FtpClientFactory ftpClientFactory = new FtpClientFactory(ftpProperties);
         ftpPool = new FtpPool(ftpClientFactory);
+        FTPClient ftpClient = ftpPool.getFTPClient();
+        if (fileProperties.getWorkDir().endsWith(File.separator)) {
+            fileProperties.setWorkDir(fileProperties.getWorkDir().substring(0, fileProperties.getWorkDir().length() - 1));
+        }
+        fileProperties.setWorkDir(fileProperties.getWorkDir().replace(File.separator, "/"));
+        //初始化保存路径
+        try {
+            if (!ftpClient.changeWorkingDirectory(fileProperties.getWorkDir())) {
+                if (ftpClient.makeDirectory(fileProperties.getWorkDir())) {
+                    ftpClient.changeWorkingDirectory(fileProperties.getWorkDir());
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            ftpPool.returnFTPClient(ftpClient);
+        }
     }
 
     @Override
@@ -79,5 +100,9 @@ public class FtpFileManager implements IFileManager {
         if (!is) {
             throw new IOException("ftp文件删除失败!");
         }
+    }
+
+    public void setFtpProperties(FtpProperties ftpProperties) {
+        this.ftpProperties = ftpProperties;
     }
 }

@@ -1,9 +1,10 @@
 package com.github.wzc789376152.file.config;
 
 import com.github.wzc789376152.file.manager.IFileManager;
-import com.github.wzc789376152.file.service.IFileService;
-import com.github.wzc789376152.file.service.impl.FileServiceImpl;
+import com.github.wzc789376152.file.manager.local.LocalFileManangerAbstract;
 import com.github.wzc789376152.file.properties.FileProperties;
+import com.github.wzc789376152.file.service.IFileService;
+import com.github.wzc789376152.file.service.impl.FileServiceAbstract;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -24,7 +25,7 @@ public class FileConfiguration implements IFileConfiguration {
     @Bean
     @ConditionalOnMissingBean(IFileService.class)
     public IFileService fileService() {
-        return new FileServiceImpl() {
+        return new FileServiceAbstract() {
             @Override
             public FileProperties getProperties() {
                 return fileProperties;
@@ -32,12 +33,19 @@ public class FileConfiguration implements IFileConfiguration {
 
             @Override
             public IFileManager getFileManager() {
-                return fileManager();
+                if (fileManager == null) {
+                    fileManager = new LocalFileManangerAbstract();
+                }
+                return fileManager;
             }
         };
     }
 
-    public IFileManager fileManager() {
+    public IFileManager getFileManager() {
         return fileManager;
+    }
+
+    public void setFileManager(IFileManager fileManager) {
+        this.fileManager = fileManager;
     }
 }
