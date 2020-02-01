@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 
 public abstract class FtpFileManagerAbstract implements IFileManager {
     Logger logger = Logger.getLogger(IFileManager.class.getName());
-    private FtpProperties ftpProperties;
+    protected FtpProperties ftpProperties;
     private FtpPool ftpPool;
 
     public abstract FtpProperties ftpProperties();

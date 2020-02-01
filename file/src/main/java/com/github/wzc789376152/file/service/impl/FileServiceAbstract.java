@@ -38,7 +38,17 @@ public abstract class FileServiceAbstract implements IFileService {
     @Override
     public abstract IFileManager getFileManager();
 
-    private IFileManager fileManager;
+    protected IFileManager fileManager;
+
+    protected FileProperties fileProperties;
+
+    public void setFileProperties(FileProperties fileProperties) {
+        this.fileProperties = fileProperties;
+    }
+
+    public void setFileManager(IFileManager fileManager) {
+        this.fileManager = fileManager;
+    }
 
     /**
      * 缓存文件后缀，该文件用于重启服务器后，继续之前的缓存任务用
@@ -56,8 +66,29 @@ public abstract class FileServiceAbstract implements IFileService {
     private boolean isCache = true;
 
 
+    public FileServiceAbstract(FileProperties properties,IFileManager manager){
+        this.fileProperties = properties;
+        this.fileManager = manager;
+        if (fileProperties == null) {
+            throw new NullPointerException("未设置参数：fileProperties");
+        }
+        if (fileProperties.getProject() == null || fileProperties.getProject().equals("")) {
+            throw new NullPointerException("未设置参数：fileProperites.project");
+        }
+        if (fileProperties.getWorkDir() == null || fileProperties.getWorkDir().equals("")) {
+            throw new NullPointerException("未设置参数：fileProperites.workDir");
+        }
+        init(fileProperties);
+        if (fileManager == null) {
+            fileManager = getFileManager();
+        }
+        fileManager.init(fileProperties);
+    }
+
     public FileServiceAbstract() {
-        FileProperties fileProperties = getProperties();
+        if (fileProperties == null) {
+            fileProperties = getProperties();
+        }
         if (fileProperties == null) {
             throw new NullPointerException("未设置参数：fileProperties");
         }

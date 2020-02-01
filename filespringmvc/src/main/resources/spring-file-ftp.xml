@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <import resource="classpath:spring-file.xml"></import>
+    <bean id="ftpProperties" class="com.github.wzc789376152.file.config.ftp.FtpProperties">
+        <property name="encoding" value="${cqfile.ftp.encoding}"></property>
+        <property name="host" value="${cqfile.ftp.host}"></property>
+        <property name="port" value="${cqfile.ftp.port:21}"></property>
+        <property name="username" value="${cqfile.ftp.username}"></property>
+        <property name="password" value="${cqfile.ftp.password}"></property>
+        <property name="maxIdle" value="${cqfile.ftp.maxIdle:8}"></property>
+        <property name="maxTotal" value="${cqfile.ftp.maxTotal:10}"></property>
+        <property name="minIdel" value="${cqfile.ftp.minIdle:1}"></property>
+        <property name="maxWaitMillis" value="${cqfile.ftp.maxWaitMillis:3000}"></property>
+    </bean>
+    <bean id="fileManager" class="com.github.wzc789376152.file.manager.FtpFileManager">
+        <property name="ftpProperties" ref="ftpProperties"></property>
+    </bean>
+</beans>

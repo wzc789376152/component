@@ -4,7 +4,9 @@
 
 ## 使用说明
 [项目引用](https://search.maven.org/artifact/com.github.wzc789376152/file-springboot-starter)
-目前最新可用版本：[1.0.3](https://search.maven.org/artifact/com.github.wzc789376152/file-springboot-starter/1.0.3/jar)
+目前最新可用版本：[1.0.4](https://search.maven.org/artifact/com.github.wzc789376152/file-springboot-starter/1.0.4/jar)
+
+SpringMvc项目[使用说明]()  
 
 ## 配置说明
 application.yml文件配置

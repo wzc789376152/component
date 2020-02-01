@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+    <context:property-placeholder location="classpath*:file.properties"/>
+    <bean id="fileProperties" class="com.github.wzc789376152.file.FileProperties">
+        <property name="cache" value="${cqfile.cache:false}"></property>
+        <property name="project" value="${cqfile.project}"></property>
+        <property name="taskPeriod" value="${cqfile.taskPeriod:1}"></property>
+        <property name="taskStartTime" value="${cqfile.taskStartTime:4}"></property>
+        <property name="taskUnit" value="${cqfile.taskUnit:day}"></property>
+        <property name="temporary" value="${cqfile.temporary:false}"></property>
+        <property name="workDir" value="${cqfile.workDir}"></property>
+    </bean>
+    <bean id="fileService" class="com.github.wzc789376152.file.service.impl.FileServiceImpl">
+        <constructor-arg name="properties" ref="fileProperties"></constructor-arg>
+        <constructor-arg name="manager" ref="fileManager"></constructor-arg>
+    </bean>
+</beans>

@@ -17,10 +17,10 @@ import org.springframework.context.annotation.Configuration;
 @ConditionalOnClass(IFileService.class)
 public class FileConfiguration implements IFileConfiguration {
     @Autowired
-    FileProperties fileProperties;
+    FileProperties properties;
     @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
     @Autowired
-    IFileManager fileManager;
+    IFileManager manager;
 
     @Bean
     @ConditionalOnMissingBean(IFileService.class)
@@ -28,24 +28,19 @@ public class FileConfiguration implements IFileConfiguration {
         return new FileServiceAbstract() {
             @Override
             public FileProperties getProperties() {
-                return fileProperties;
+                return properties;
             }
 
             @Override
             public IFileManager getFileManager() {
-                if (fileManager == null) {
-                    fileManager = new LocalFileManangerAbstract();
+                if (manager == null) {
+                    manager = new LocalFileManangerAbstract();
                 }
-                return fileManager;
+                return manager;
             }
         };
     }
-
     public IFileManager getFileManager() {
-        return fileManager;
-    }
-
-    public void setFileManager(IFileManager fileManager) {
-        this.fileManager = fileManager;
+        return manager;
     }
 }

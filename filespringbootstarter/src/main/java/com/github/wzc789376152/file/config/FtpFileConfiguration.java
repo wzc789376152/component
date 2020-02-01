@@ -13,10 +13,10 @@ import javax.annotation.Resource;
 
 @Configuration
 @EnableConfigurationProperties(FtpProperties.class)
-@ConditionalOnProperty(prefix = "spring.cqfile.ftp", name = "enable",havingValue = "true",matchIfMissing = true)
+@ConditionalOnProperty(prefix = "spring.cqfile.ftp", name = "enable", havingValue = "true", matchIfMissing = true)
 public class FtpFileConfiguration {
     @Resource
-    private FtpProperties ftpProperties;
+    private FtpProperties properties;
 
     @Bean
     @ConditionalOnMissingBean(IFileManager.class)
@@ -24,8 +24,16 @@ public class FtpFileConfiguration {
         return new FtpFileManagerAbstract() {
             @Override
             public com.github.wzc789376152.file.config.ftp.FtpProperties ftpProperties() {
-                return ftpProperties;
+                return properties;
             }
         };
+    }
+
+    public FtpProperties getProperties() {
+        return properties;
+    }
+
+    public void setProperties(FtpProperties properties) {
+        this.properties = properties;
     }
 }
