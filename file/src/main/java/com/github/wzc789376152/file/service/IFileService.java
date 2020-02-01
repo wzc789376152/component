@@ -26,7 +26,7 @@ public interface IFileService {
     /**
      * 获取保存的文件列表
      *
-     * @return
+     * @return 返回文件名集合
      * @throws IOException 抛出异常
      */
     List<String> getFileNameList() throws IOException;

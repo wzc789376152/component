@@ -19,7 +19,9 @@ public class FtpPool {
         return factory;
     }
 
-    //初始化连接池
+    /**
+     * 初始化连接池
+     */
     public FtpPool(FtpClientFactory factory) {
         this.factory = factory;
         initPool();
@@ -35,7 +37,9 @@ public class FtpPool {
         this.internalPool = new GenericObjectPool<FTPClient>(factory, poolConfig);
     }
 
-    //从连接池中取连接
+    /**
+     * 从连接池中取连接
+     */
     public FTPClient getFTPClient() {
         try {
             return internalPool.borrowObject();
@@ -45,7 +49,9 @@ public class FtpPool {
         }
     }
 
-    //将链接归还到连接池
+    /**
+     * 将链接归还到连接池
+     */
     public void returnFTPClient(FTPClient ftpClient) {
         try {
             internalPool.returnObject(ftpClient);
