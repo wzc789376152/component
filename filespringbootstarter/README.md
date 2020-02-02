@@ -4,7 +4,7 @@
 
 ## 使用说明
 [项目引用](https://search.maven.org/artifact/com.github.wzc789376152/file-springboot-starter)
-目前最新可用版本：[1.0.4](https://search.maven.org/artifact/com.github.wzc789376152/file-springboot-starter/1.0.4/jar)
+目前最新可用版本：[1.0.5](https://search.maven.org/artifact/com.github.wzc789376152/file-springboot-starter/1.0.5/jar)
 
 SpringMvc项目[使用说明](https://github.com/wzc789376152/component/blob/master/filespringmvc/README.md#java-%E6%96%87%E4%BB%B6%E5%A4%84%E7%90%86%E7%BB%84%E4%BB%B6springmvc)  
 

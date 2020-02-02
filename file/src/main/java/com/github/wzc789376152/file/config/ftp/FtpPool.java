@@ -21,6 +21,7 @@ public class FtpPool {
 
     /**
      * 初始化连接池
+     * @param factory 连接配置
      */
     public FtpPool(FtpClientFactory factory) {
         this.factory = factory;
@@ -39,6 +40,7 @@ public class FtpPool {
 
     /**
      * 从连接池中取连接
+     * @return 连接
      */
     public FTPClient getFTPClient() {
         try {
@@ -51,6 +53,7 @@ public class FtpPool {
 
     /**
      * 将链接归还到连接池
+     * @param ftpClient 连接
      */
     public void returnFTPClient(FTPClient ftpClient) {
         try {
