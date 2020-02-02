@@ -17,7 +17,7 @@ SpringBoot项目[使用说明](https://github.com/wzc789376152/component/blob/ma
       <param-value>classpath:spring.xml,classpath*:spring-file-local.xml</param-value>
     </init-param>
 
-添加spring配置文件，如本地配置添加classpath*:spring-file-local.xml
+添加spring配置文件，如本地配置添加classpath*:spring-file-local.xml  
 ftp配置添加classpath*:spring-file-ftp.xml
 
 ### file.properties文件配置
