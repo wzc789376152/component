@@ -15,7 +15,6 @@ application.yml文件配置
 
     spring:
       cqfile:
-        type: local
         project: fileDemo
         work-dir: images
         temporary: true
@@ -24,14 +23,14 @@ application.yml文件配置
 
     spring:
       cqfile:
-        type: ftp
         project: fileDemo
         work-dir: images
         cache: true
         temporary: true
         ftp:
-          username: salehosing
-          password: dBZxK2TjLZrNKWrj
+          enable: true
+          username: 123456
+          password: 123456
           host: yangmh.top
           encoding: UTF-8
           max-wait-millis: 300

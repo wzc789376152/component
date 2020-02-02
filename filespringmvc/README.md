@@ -21,10 +21,10 @@ SpringBoot项目[使用说明](https://github.com/wzc789376152/component/blob/ma
 ftp配置添加classpath*:spring-file-ftp.xml
 
 ### file.properties文件配置
-cqfile.project=fileDemo  
-cqfile.workDir=temp  
-
-cqfile.ftp.host=127.0.0.1  
-cqfile.ftp.username=123456  
+    cqfile.project=fileDemo  
+    cqfile.workDir=temp  
+    
+    cqfile.ftp.host=127.0.0.1  
+    cqfile.ftp.username=123456  
           
 详细参数参考[参数说明](https://github.com/wzc789376152/component/blob/master/file/README.md#%E5%8F%82%E6%95%B0%E8%AF%B4%E6%98%8E)
