@@ -24,8 +24,10 @@
 
 ## 使用说明
 
+jdk版本>=1.8  
 [项目引用](https://search.maven.org/artifact/com.github.wzc789376152/file)
-目前最新可用版本：[1.0.6](https://search.maven.org/artifact/com.github.wzc789376152/file/1.0.6/jar)
+目前最新可用版本：[1.1.0](https://search.maven.org/artifact/com.github.wzc789376152/file/1.1.0/jar)  
+推荐使用最新版本，历史版本可能存在bug  
 
 SpringBoot项目[使用说明](https://github.com/wzc789376152/component/blob/master/filespringbootstarter/README.md#java-%E6%96%87%E4%BB%B6%E5%A4%84%E7%90%86%E7%BB%84%E4%BB%B6springboot)  
 SpringMvc项目[使用说明](https://github.com/wzc789376152/component/blob/master/filespringmvc/README.md#java-%E6%96%87%E4%BB%B6%E5%A4%84%E7%90%86%E7%BB%84%E4%BB%B6springmvc)  

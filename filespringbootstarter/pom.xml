@@ -9,11 +9,19 @@
         <version>1.0.0</version>
     </parent>
     <properties>
-        <file.version>1.0.6</file.version>
+        <project.release.version>1.1.0-SNAPSHOT</project.release.version>
     </properties>
+    <profiles>
+        <profile>
+            <id>product</id>
+            <properties>
+                <project.release.version>1.1.0</project.release.version>
+            </properties>
+        </profile>
+    </profiles>
     <groupId>com.github.wzc789376152</groupId>
     <artifactId>file-springboot-starter</artifactId>
-    <version>${file.version}</version>
+    <version>${project.release.version}</version>
     <packaging>jar</packaging>
     <description>
         文件管理启动项目
@@ -24,6 +32,7 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>2.0.0.RELEASE</version>
             </plugin>
         </plugins>
     </build>
@@ -42,7 +51,8 @@
         <dependency>
             <groupId>com.github.wzc789376152</groupId>
             <artifactId>file</artifactId>
-            <version>${file.version}</version>
+            <version>${project.release.version}</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 </project>
