@@ -5,7 +5,7 @@
 ## 使用说明
 SpringBoot版本>=2.0.0.RELEASE  
 [项目引用](https://search.maven.org/artifact/com.github.wzc789376152/file-springboot-starter)
-目前最新可用版本：[1.1.0](https://search.maven.org/artifact/com.github.wzc789376152/file-springboot-starter/1.1.0/jar)  
+目前最新可用版本：[1.1.1](https://search.maven.org/artifact/com.github.wzc789376152/file-springboot-starter/1.1.1/jar)  
 注意，需要同时引用[项目](https://search.maven.org/artifact/com.github.wzc789376152/file)  
 推荐使用最新版本，历史版本可能存在bug  
 

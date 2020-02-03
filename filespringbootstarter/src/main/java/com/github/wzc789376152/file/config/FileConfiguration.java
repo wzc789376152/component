@@ -11,6 +11,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 
 @Configuration
 @EnableConfigurationProperties(FileProperties.class)
@@ -18,7 +19,7 @@ import org.springframework.context.annotation.Configuration;
 public class FileConfiguration implements IFileConfiguration {
     @Autowired
     FileProperties properties;
-    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
+
     @Autowired
     IFileManager manager;
 
@@ -33,13 +34,11 @@ public class FileConfiguration implements IFileConfiguration {
 
             @Override
             public IFileManager getFileManager() {
-                if (manager == null) {
-                    manager = new LocalFileManangerAbstract();
-                }
                 return manager;
             }
         };
     }
+
     public IFileManager getFileManager() {
         return manager;
     }

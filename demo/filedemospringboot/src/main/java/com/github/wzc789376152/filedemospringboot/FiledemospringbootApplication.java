@@ -14,27 +14,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class FiledemospringbootApplication {
 
     public static void main(String[] args) {
-        IFileService fileService = new FileServiceAbstract() {
-            @Override
-            public FileProperties getProperties() {
-                FileProperties fileProperties = new FileProperties();
-                fileProperties.setProject("fileDemo");
-                fileProperties.setWorkDir("temp");
-                return fileProperties;
-            }
-
-            @Override
-            public IFileManager getFileManager() {
-                IFileManager fileManager = new FtpFileManagerAbstract() {
-                    @Override
-                    public FtpProperties ftpProperties() {
-                        FtpProperties ftpProperties = new FtpProperties();
-                        return ftpProperties;
-                    }
-                };
-                return fileManager;
-            }
-        };
         SpringApplication.run(FiledemospringbootApplication.class, args);
     }
 
