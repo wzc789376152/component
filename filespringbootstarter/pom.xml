@@ -7,8 +7,10 @@
         <groupId>com.github.wzc789376152</groupId>
         <artifactId>parent</artifactId>
         <version>1.0.0</version>
-        <relativePath>../parent/pom.xml</relativePath>
     </parent>
+    <properties>
+        <file.version>1.0.6</file.version>
+    </properties>
     <groupId>com.github.wzc789376152</groupId>
     <artifactId>file-springboot-starter</artifactId>
     <version>${file.version}</version>

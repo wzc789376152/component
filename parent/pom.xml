@@ -13,9 +13,6 @@
         <artifactId>oss-parent</artifactId>
         <version>7</version>
     </parent>
-    <properties>
-        <file.version>1.0.5</file.version>
-    </properties>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>
         发布组件项目

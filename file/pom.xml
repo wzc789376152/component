@@ -11,7 +11,7 @@
     </parent>
     <groupId>com.github.wzc789376152</groupId>
     <artifactId>file</artifactId>
-    <version>${file.version}</version>
+    <version>1.0.6</version>
     <packaging>jar</packaging>
     <description>
         文件管理工具
