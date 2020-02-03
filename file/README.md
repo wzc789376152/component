@@ -26,7 +26,7 @@
 
 jdk版本>=1.8  
 [项目引用](https://search.maven.org/artifact/com.github.wzc789376152/file)
-目前最新可用版本：[1.1.0](https://search.maven.org/artifact/com.github.wzc789376152/file/1.1.0/jar)  
+目前最新可用版本：[1.1.1](https://search.maven.org/artifact/com.github.wzc789376152/file/1.1.1/jar)  
 推荐使用最新版本，历史版本可能存在bug  
 
 SpringBoot项目[使用说明](https://github.com/wzc789376152/component/blob/master/filespringbootstarter/README.md#java-%E6%96%87%E4%BB%B6%E5%A4%84%E7%90%86%E7%BB%84%E4%BB%B6springboot)  
@@ -55,6 +55,8 @@ SpringMvc项目[使用说明](https://github.com/wzc789376152/component/blob/mas
         
 |方法|参数|返回值|说明|
 |----|----|----|----|
+|`String getTemporaryDir()`|无|`String`：临时文件夹路径|返回临时文件夹路径|
+|`String getCacheDir()`|无|`String`：缓存文件夹路径|返回缓存文件夹路径|
 |`FileProperties getProperties()`|无|`FileProperties`：文件配置|返回文件配置方法|
 |`IFileManager getFileManager()`|无|`IFileManager`：文件管理器|返回文件管理器方法|
 |`List<String> getFileNameList() throws IOException`|无|`List<String>`：文件名集合|返回文件夹所有文件名方法|

@@ -24,11 +24,13 @@ public abstract class FileServiceAbstract implements IFileService {
     Logger logger = Logger.getLogger(IFileService.class.getName());
 
 
-    private String getTemporaryDir() {
+    @Override
+    public String getTemporaryDir() {
         return System.getProperty("user.dir") + (getProperties() != null ? (getProperties().getProject() != null ? (File.separator + getProperties().getProject() + File.separator) : File.separator) : File.separator) + "temporary" + File.separator;
     }
 
-    private String getCacheDir() {
+    @Override
+    public String getCacheDir() {
         return System.getProperty("user.dir") + (getProperties() != null ? (getProperties().getProject() != null ? (File.separator + getProperties().getProject() + File.separator) : File.separator) : File.separator) + "cache" + File.separator;
     }
 
@@ -66,7 +68,7 @@ public abstract class FileServiceAbstract implements IFileService {
     private boolean isCache = true;
 
 
-    public FileServiceAbstract(FileProperties properties,IFileManager manager){
+    public FileServiceAbstract(FileProperties properties, IFileManager manager) {
         this.fileProperties = properties;
         this.fileManager = manager;
         if (fileProperties == null) {
@@ -151,26 +153,27 @@ public abstract class FileServiceAbstract implements IFileService {
             new TimerConfiguration(fileProperties.getTaskStartTime(), fileProperties.getTaskPeriod(), fileProperties.getTaskUnit()) {
                 @Override
                 public void runable() {
+                    logger.info("=======开始清理临时文件========");
                     deleteTemp();
+                    logger.info("=======清理临时文件成功========");
                 }
             };
-            logger.info("清理临时文件任务");
+            logger.info("创建清理临时文件任务");
         }
     }
 
-    private boolean deleteTemp() {
+    private void deleteTemp() {
         File file = new File(getTemporaryDir());
         File[] files = file.listFiles();
         for (File f : files) {
             delFile(f);
         }
-        logger.info("=======清理临时文件========");
-        return true;
     }
 
-    private boolean delFile(File file) {
+    private void delFile(File file) {
         if (!file.exists()) {
-            return false;
+            logger.warning(file.getName() + "不存在");
+            return;
         }
         if (file.isDirectory()) {
             File[] files = file.listFiles();
@@ -178,7 +181,8 @@ public abstract class FileServiceAbstract implements IFileService {
                 delFile(f);
             }
         }
-        return file.delete();
+        file.delete();
+        logger.info(file.getName() + "删除成功");
     }
 
     /**
@@ -192,7 +196,7 @@ public abstract class FileServiceAbstract implements IFileService {
             fileSet.add(filename);
         }
         for (String filename : fileSet) {
-            logger.info("=======开始缓存文件========");
+            logger.info("=======开始缓存文件:" + filename + "========");
             try {
                 //将文件缓存到缓存文件夹
                 OutputStream outputStream = new FileOutputStream(new File(getCacheDir() + filename));
@@ -223,7 +227,7 @@ public abstract class FileServiceAbstract implements IFileService {
                     cacheFile.delete();
                 }
                 cacheDownloadFileSet.remove(filename);
-                logger.info("=======缓存文件成功========");
+                logger.info("=======缓存文件:" + filename + "成功========");
             } catch (Exception e) {
                 logger.warning(e.getMessage());
             }
@@ -241,7 +245,7 @@ public abstract class FileServiceAbstract implements IFileService {
             fileSet.add(filename);
         }
         for (String filename : fileSet) {
-            logger.info("=======开始上传缓存文件========");
+            logger.info("=======开始上传缓存文件:" + filename + "========");
             try {
                 File tempFile = new File(getTemporaryDir() + filename);
                 File cacheFile = new File(getCacheDir() + filename + CACHESUFFIX);
@@ -278,7 +282,7 @@ public abstract class FileServiceAbstract implements IFileService {
                 cacheFile = new File(getCacheDir() + filename + CACHESUFFIX);
                 cacheFile.delete();
                 cacheUploadFileSet.remove(filename);
-                logger.info("=======上传缓存文件成功========");
+                logger.info("=======上传缓存文件:" + filename + "成功========");
             } catch (Exception e) {
                 logger.warning(e.getMessage());
             }
@@ -322,7 +326,7 @@ public abstract class FileServiceAbstract implements IFileService {
             OutputStream outputStream = new FileOutputStream(cacheFile);
             outputStream.write(0);//创建缓存文件
             outputStream.close();
-            logger.info("加入文件上传缓存队列！");
+            logger.info(filename + "加入文件上传缓存队列！");
         } else {
             if (isTemp) {
                 File tempFile = new File(getTemporaryDir() + filename);
@@ -335,7 +339,7 @@ public abstract class FileServiceAbstract implements IFileService {
                     }
                 }
             } else {
-                logger.warning("未开启模版，方法无效！");
+                logger.warning("未开启临时文件，方法无效！");
             }
         }
     }
@@ -349,7 +353,7 @@ public abstract class FileServiceAbstract implements IFileService {
                 fileManager.download(fileName, outputStream);
                 if (isCache) {
                     cacheDownloadFileSet.add(fileName);
-                    logger.info("加入文件下载缓存队列！");
+                    logger.info(fileName + "加入文件下载缓存队列！");
                 }
             } else {
                 InputStream tempInputStream = new FileInputStream(tempFile);

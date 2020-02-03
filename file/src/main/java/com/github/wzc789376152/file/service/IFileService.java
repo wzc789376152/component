@@ -11,6 +11,18 @@ import java.util.List;
 public interface IFileService {
 
     /**
+     * 获取临时文件夹路径
+     * @return 返回临时文件夹路径
+     */
+    String getTemporaryDir();
+
+    /**
+     * 获取缓存文件夹路径
+     * @return 返回缓存文件夹路径
+     */
+    String getCacheDir();
+
+    /**
      * 获取文件配置信息
      *
      * @return 返回文件配置
