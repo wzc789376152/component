@@ -8,6 +8,8 @@
 >>[FileProperties](#FileProperties)  
 >>[FtpProperties](#FtpProperties)  
 >
+>[相关插件](#相关插件)
+>>[ftp文件管理器插件](https://github.com/wzc789376152/component/blob/master/ftpfilemanager/README.md#java-%E6%96%87%E4%BB%B6%E5%A4%84%E7%90%86%E7%BB%84%E4%BB%B6ftp%E6%8B%93%E5%B1%95%E6%8F%92%E4%BB%B6)
 >[二开说明](#二开说明)  
 
 ## 简介
@@ -27,8 +29,6 @@
 [项目引用](https://search.maven.org/artifact/com.github.wzc789376152/file)
 目前最新可用版本：[1.2.0](https://search.maven.org/artifact/com.github.wzc789376152/file/1.2.0/jar)  
 推荐使用最新版本，历史版本可能存在bug  
-
-[ftp文件管理器插件]()
 
 SpringBoot项目[使用说明](https://github.com/wzc789376152/component/blob/master/filespringbootstarter/README.md#java-%E6%96%87%E4%BB%B6%E5%A4%84%E7%90%86%E7%BB%84%E4%BB%B6springboot)  
 SpringMvc项目[使用说明](https://github.com/wzc789376152/component/blob/master/filespringmvc/README.md#java-%E6%96%87%E4%BB%B6%E5%A4%84%E7%90%86%E7%BB%84%E4%BB%B6springmvc)  
