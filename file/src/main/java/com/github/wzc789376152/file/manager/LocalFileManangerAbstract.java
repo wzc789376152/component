@@ -1,21 +1,19 @@
-package com.github.wzc789376152.file.manager.local;
+package com.github.wzc789376152.file.manager;
 
-import com.github.wzc789376152.file.utils.FilePathUtils;
 import com.github.wzc789376152.file.FileProperties;
-import com.github.wzc789376152.file.manager.IFileManager;
+import com.github.wzc789376152.file.utils.FilePathUtils;
 
 import java.io.*;
 import java.nio.channels.FileChannel;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
+
 
 public class LocalFileManangerAbstract implements IFileManager {
     Logger logger = Logger.getLogger(IFileManager.class.getName());
     private FileProperties fileProperties;
 
-    @Override
     public void init(FileProperties fileProperties) {
         logger.info("use localFileManager");
         //创建服务器文件夹；需要服务器权限
@@ -27,14 +25,16 @@ public class LocalFileManangerAbstract implements IFileManager {
         this.fileProperties = fileProperties;
     }
 
-    @Override
     public List<String> getAllFilesName() {
         File file1 = new File(fileProperties.getWorkDir());
         File[] tempList1 = file1.listFiles();
-        return Arrays.stream(tempList1).filter(file -> file.isFile()).map(File::getName).collect(Collectors.toList());
+        List<String> result = new ArrayList<String>();
+        for (File file : tempList1) {
+            result.add(file.getName());
+        }
+        return result;
     }
 
-    @Override
     public void upload(String filename, InputStream inputStream) throws IOException {
         File dest = new File(fileProperties.getWorkDir() + filename);
         FileChannel inputChannel = null;
@@ -49,7 +49,6 @@ public class LocalFileManangerAbstract implements IFileManager {
         }
     }
 
-    @Override
     public void download(String filename, OutputStream outputStream) throws IOException {
         InputStream inputStream;
         File file = new File(fileProperties.getWorkDir() + filename);
@@ -68,7 +67,6 @@ public class LocalFileManangerAbstract implements IFileManager {
         inputStream.close();
     }
 
-    @Override
     public void delete(String filename) throws IOException {
         File file = new File(fileProperties.getWorkDir() + filename);
         if (file.exists()) {

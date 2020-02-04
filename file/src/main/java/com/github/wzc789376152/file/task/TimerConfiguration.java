@@ -21,26 +21,24 @@ public abstract class TimerConfiguration {
     public void init(int startTime, int period, String unit) {
         if (scheduledExecutorService == null) {
             scheduledExecutorService = new ScheduledThreadPoolExecutor(1);
-            Runnable runnable = () -> runable();
+            Runnable runnable = new Runnable() {
+                public void run() {
+                    runable();
+                }
+            };
             int calendarType = Calendar.MONTH;
             boolean is = true;//是否定时清理临时文件夹
             if (unit != null) {
-                switch (unit) {
-                    case "year":
-                        calendarType = Calendar.YEAR;
-                        break;
-                    case "month":
-                        calendarType = Calendar.MONTH;
-                        break;
-                    case "day":
-                        calendarType = Calendar.DATE;
-                        break;
-                    case "second":
-                        calendarType = Calendar.SECOND;
-                        break;
-                    default:
-                        is = false;
-                        break;
+                if ("year".equals(unit)) {
+                    calendarType = Calendar.YEAR;
+                } else if ("month".equals(unit)) {
+                    calendarType = Calendar.MONTH;
+                } else if ("day".equals(unit)) {
+                    calendarType = Calendar.DATE;
+                } else if ("second".equals(unit)) {
+                    calendarType = Calendar.SECOND;
+                } else {
+                    is = false;
                 }
             } else {
                 is = false;

@@ -7,12 +7,10 @@ import com.github.wzc789376152.file.task.TimerConfiguration;
 
 import java.io.*;
 import java.nio.channels.FileChannel;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 /**
  * 如果分布式情况下，需所有服务器缓存，故不考虑多种缓存机制如redis等，一律本机服务器缓存
@@ -24,20 +22,16 @@ public abstract class FileServiceAbstract implements IFileService {
     Logger logger = Logger.getLogger(IFileService.class.getName());
 
 
-    @Override
     public String getTemporaryDir() {
         return System.getProperty("user.dir") + (getProperties() != null ? (getProperties().getProject() != null ? (File.separator + getProperties().getProject() + File.separator) : File.separator) : File.separator) + "temporary" + File.separator;
     }
 
-    @Override
     public String getCacheDir() {
         return System.getProperty("user.dir") + (getProperties() != null ? (getProperties().getProject() != null ? (File.separator + getProperties().getProject() + File.separator) : File.separator) : File.separator) + "cache" + File.separator;
     }
 
-    @Override
     public abstract FileProperties getProperties();
 
-    @Override
     public abstract IFileManager getFileManager();
 
     protected IFileManager fileManager;
@@ -121,8 +115,15 @@ public abstract class FileServiceAbstract implements IFileService {
                 cacheFile = new File(getCacheDir());
             }
             //初始化要缓存上传的文件
-            FileFilter fileFilter = f -> f.getName().endsWith(CACHESUFFIX);
-            Set<String> fileNames = Arrays.stream(cacheFile.listFiles(fileFilter)).map(f -> f.getName().substring(0, f.getName().indexOf(CACHESUFFIX))).collect(Collectors.toSet());
+            FileFilter fileFilter = new FileFilter() {
+                public boolean accept(File pathname) {
+                    return pathname.getName().endsWith(CACHESUFFIX);
+                }
+            };
+            Set<String> fileNames = new HashSet<String>();
+            for (File file : cacheFile.listFiles(fileFilter)) {
+                fileNames.add(file.getName().substring(0, file.getName().indexOf(CACHESUFFIX)));
+            }
             if (fileNames.size() > 0) {
                 cacheUploadFileSet = fileNames;
             }
@@ -190,7 +191,7 @@ public abstract class FileServiceAbstract implements IFileService {
      * 需等待线程执行完成，才能执行下个线程，防止同时上传多个文件，造成带宽占用
      */
     private synchronized void fileDownloadCache() {
-        Set<String> fileSet = new HashSet<>();
+        Set<String> fileSet = new HashSet<String>();
         //复制下载队列
         for (String filename : cacheDownloadFileSet) {
             fileSet.add(filename);
@@ -239,7 +240,7 @@ public abstract class FileServiceAbstract implements IFileService {
      * 需等待线程执行完成，才能执行下个线程，防止同时上传多个文件，造成带宽占用
      */
     private synchronized void fileUploadCache() {
-        Set<String> fileSet = new HashSet<>();
+        Set<String> fileSet = new HashSet<String>();
         //复制上传队列
         for (String filename : cacheUploadFileSet) {
             fileSet.add(filename);
@@ -289,14 +290,12 @@ public abstract class FileServiceAbstract implements IFileService {
         }
     }
 
-    @Override
     public List<String> getFileNameList() {
         List<String> fileList = fileManager.getAllFilesName();
         return fileList;
     }
 
 
-    @Override
     public void uploadCache(InputStream inputStream, String filename) throws IOException {
         if (isTemp) {
             File dest = new File(getTemporaryDir() + filename);
@@ -317,8 +316,6 @@ public abstract class FileServiceAbstract implements IFileService {
         }
     }
 
-
-    @Override
     public void submit(String filename) throws IOException {
         if (isCache) {
             cacheUploadFileSet.add(filename);
@@ -344,7 +341,6 @@ public abstract class FileServiceAbstract implements IFileService {
         }
     }
 
-    @Override
     public void download(String fileName, OutputStream outputStream) throws IOException {
         if (isTemp) {
             File tempFile = new File(getTemporaryDir() + fileName);
@@ -376,7 +372,6 @@ public abstract class FileServiceAbstract implements IFileService {
     /**
      * 删除文件
      */
-    @Override
     public void delete(String filename) throws IOException {
         if (isTemp) {
             File tempFile = new File(getTemporaryDir() + filename);

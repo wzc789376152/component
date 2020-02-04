@@ -3,8 +3,8 @@
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
     <import resource="classpath:spring-file.xml"></import>
-    <bean id="ftpProperties" class="com.github.wzc789376152.file.config.ftp.FtpProperties">
-        <property name="encoding" value="${cqfile.ftp.encoding}"></property>
+    <bean id="ftpProperties" class="com.github.wzc789376152.file.FtpProperties">
+        <property name="encoding" value="${cqfile.ftp.encoding:UTF-8}"></property>
         <property name="host" value="${cqfile.ftp.host}"></property>
         <property name="port" value="${cqfile.ftp.port:21}"></property>
         <property name="username" value="${cqfile.ftp.username}"></property>

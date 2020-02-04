@@ -1,7 +1,6 @@
 package com.github.wzc789376152.file.config;
 
 import com.github.wzc789376152.file.manager.IFileManager;
-import com.github.wzc789376152.file.manager.local.LocalFileManangerAbstract;
 import com.github.wzc789376152.file.properties.FileProperties;
 import com.github.wzc789376152.file.service.IFileService;
 import com.github.wzc789376152.file.service.impl.FileServiceAbstract;
@@ -11,7 +10,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
 
 @Configuration
 @EnableConfigurationProperties(FileProperties.class)

@@ -1,10 +1,9 @@
-package com.github.wzc789376152.file.manager.ftp;
+package com.github.wzc789376152.file.manager;
 
 import com.github.wzc789376152.file.FileProperties;
-import com.github.wzc789376152.file.config.ftp.FtpClientFactory;
-import com.github.wzc789376152.file.config.ftp.FtpPool;
-import com.github.wzc789376152.file.config.ftp.FtpProperties;
-import com.github.wzc789376152.file.manager.IFileManager;
+import com.github.wzc789376152.file.FtpClientFactory;
+import com.github.wzc789376152.file.FtpPool;
+import com.github.wzc789376152.file.FtpProperties;
 import com.github.wzc789376152.file.utils.FilePathUtils;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
@@ -13,10 +12,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 public abstract class FtpFileManagerAbstract implements IFileManager {
     Logger logger = Logger.getLogger(IFileManager.class.getName());
@@ -25,12 +23,11 @@ public abstract class FtpFileManagerAbstract implements IFileManager {
 
     public abstract FtpProperties ftpProperties();
 
-    @Override
     public void init(FileProperties fileProperties) {
         logger.info("use ftpFileManager");
         if (ftpProperties == null) {
             ftpProperties = ftpProperties();
-            if(ftpProperties == null) {
+            if (ftpProperties == null) {
                 throw new RuntimeException("未进行ftp配置");
             }
         }
@@ -55,11 +52,16 @@ public abstract class FtpFileManagerAbstract implements IFileManager {
         }
     }
 
-    @Override
     public List<String> getAllFilesName() {
         FTPClient client = ftpPool.getFTPClient();
+        List<String> result = new ArrayList<String>();
         try {
-            return Arrays.stream(client.listFiles()).filter(ftpFile -> ftpFile.isFile()).map(FTPFile::getName).collect(Collectors.toList());
+            for (FTPFile file : client.listFiles()) {
+                if (file.isFile()) {
+                    result.add(file.getName());
+                }
+            }
+            return result;
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
@@ -68,7 +70,6 @@ public abstract class FtpFileManagerAbstract implements IFileManager {
         return null;
     }
 
-    @Override
     public void upload(String filename, InputStream inputStream) throws IOException {
         FTPClient ftpClient = ftpPool.getFTPClient();
         //开始进行文件上
@@ -81,7 +82,6 @@ public abstract class FtpFileManagerAbstract implements IFileManager {
         ftpPool.returnFTPClient(ftpClient);//归还资源
     }
 
-    @Override
     public void download(String filename, OutputStream outputStream) throws IOException {
         FTPClient ftpClient = ftpPool.getFTPClient();
         //将文件直接读取到响应体中
@@ -92,7 +92,6 @@ public abstract class FtpFileManagerAbstract implements IFileManager {
         ftpPool.returnFTPClient(ftpClient);
     }
 
-    @Override
     public void delete(String filename) throws IOException {
         FTPClient ftpClient = ftpPool.getFTPClient();
         boolean is = ftpClient.deleteFile(filename);

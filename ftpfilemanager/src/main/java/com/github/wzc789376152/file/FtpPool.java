@@ -1,4 +1,4 @@
-package com.github.wzc789376152.file.config.ftp;
+package com.github.wzc789376152.file;
 
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.pool2.impl.GenericObjectPool;

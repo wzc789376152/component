@@ -1,7 +1,6 @@
 package com.github.wzc789376152.file.manager;
 
-import com.github.wzc789376152.file.config.ftp.FtpProperties;
-import com.github.wzc789376152.file.manager.ftp.FtpFileManagerAbstract;
+import com.github.wzc789376152.file.FtpProperties;
 
 public class FtpFileManager extends FtpFileManagerAbstract {
     @Override

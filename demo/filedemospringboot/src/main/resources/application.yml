@@ -1,4 +1,11 @@
 spring:
   cqfile:
+    ftp:
+      username: salehosing
+      password: dBZxK2TjLZrNKWrj
+      host: yangmh.top
+      encoding: UTF-8
+      max-wait-millis: 300
+      enable: true
     project: filedemo
     work-dir: temp

@@ -1,4 +1,4 @@
-package com.github.wzc789376152.file.config.ftp;
+package com.github.wzc789376152.file;
 
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
@@ -6,7 +6,6 @@ import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 
-import java.io.File;
 import java.io.IOException;
 
 public class FtpClientFactory implements PooledObjectFactory<FTPClient> {
@@ -20,14 +19,12 @@ public class FtpClientFactory implements PooledObjectFactory<FTPClient> {
     protected FtpProperties properties;
 
     //创建连接到池中
-    @Override
     public PooledObject<FTPClient> makeObject() {
         FTPClient ftpClient = new FTPClient();//创建客户端实例
-        return new DefaultPooledObject<>(ftpClient);
+        return new DefaultPooledObject<FTPClient>(ftpClient);
     }
 
     //销毁连接，当连接池空闲数量达到上限时，调用此方法销毁连接
-    @Override
     public void destroyObject(PooledObject<FTPClient> pooledObject) {
         FTPClient ftpClient = pooledObject.getObject();
         try {
@@ -41,7 +38,6 @@ public class FtpClientFactory implements PooledObjectFactory<FTPClient> {
     }
 
     //链接状态检查
-    @Override
     public boolean validateObject(PooledObject<FTPClient> pooledObject) {
         FTPClient ftpClient = pooledObject.getObject();
         try {
@@ -52,7 +48,6 @@ public class FtpClientFactory implements PooledObjectFactory<FTPClient> {
     }
 
     //初始化连接
-    @Override
     public void activateObject(PooledObject<FTPClient> pooledObject) throws Exception {
         FTPClient ftpClient = pooledObject.getObject();
         ftpClient.connect(properties.getHost(), properties.getPort());
@@ -64,7 +59,6 @@ public class FtpClientFactory implements PooledObjectFactory<FTPClient> {
     }
 
     //钝化连接，使链接变为可用状态
-    @Override
     public void passivateObject(PooledObject<FTPClient> pooledObject) throws Exception {
         FTPClient ftpClient = pooledObject.getObject();
         try {
