@@ -4,8 +4,9 @@
 
 ## 使用说明
 [项目引用](https://search.maven.org/artifact/com.github.wzc789376152/filespringmvc)
-目前最新可用版本：[1.1.0](https://search.maven.org/artifact/com.github.wzc789376152/filespringmvc/1.1.0/jar)  
-注意，需要同时引用[项目](https://search.maven.org/artifact/com.github.wzc789376152/file)  
+目前最新可用版本：[1.2.0](https://search.maven.org/artifact/com.github.wzc789376152/filespringmvc/1.2.0/jar)  
+注意，需要同时引用包[com.github.wzc789376152.file](https://search.maven.org/artifact/com.github.wzc789376152/file)  
+如果使用ftp文件管理器插件需要引入包[com.github.wzc789376152.ftp-file-manager](https://search.maven.org/artifact/com.github.wzc789376152/ftp-file-manager)
 推荐使用最新版本，历史版本可能存在bug  
 
 SpringBoot项目[使用说明](https://github.com/wzc789376152/component/blob/master/filespringbootstarter/README.md#java-%E6%96%87%E4%BB%B6%E5%A4%84%E7%90%86%E7%BB%84%E4%BB%B6springboot)  

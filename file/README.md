@@ -24,10 +24,11 @@
 
 ## 使用说明
 
-jdk版本>=1.8  
 [项目引用](https://search.maven.org/artifact/com.github.wzc789376152/file)
-目前最新可用版本：[1.1.1](https://search.maven.org/artifact/com.github.wzc789376152/file/1.1.1/jar)  
+目前最新可用版本：[1.2.0](https://search.maven.org/artifact/com.github.wzc789376152/file/1.2.0/jar)  
 推荐使用最新版本，历史版本可能存在bug  
+
+[ftp文件管理器插件]()
 
 SpringBoot项目[使用说明](https://github.com/wzc789376152/component/blob/master/filespringbootstarter/README.md#java-%E6%96%87%E4%BB%B6%E5%A4%84%E7%90%86%E7%BB%84%E4%BB%B6springboot)  
 SpringMvc项目[使用说明](https://github.com/wzc789376152/component/blob/master/filespringmvc/README.md#java-%E6%96%87%E4%BB%B6%E5%A4%84%E7%90%86%E7%BB%84%E4%BB%B6springmvc)  
@@ -66,21 +67,11 @@ SpringMvc项目[使用说明](https://github.com/wzc789376152/component/blob/mas
 |`void delete(String filename) throws IOException`|`filename`：文件名|无|删除文件方法|
 
 ### IFileManager接口
-提供两个抽象类；用于实现实际文件操作
+提供本地文件管理器抽象类；用于实现实际文件操作
 >LocalFileManagerAbstract
 
     IFileManager fileManager = new LocalFileManangerAbstract();
                 
->FtpFileManagerAbstract
-
-    IFileManager fileManager = new FtpFileManagerAbstract() {
-                        @Override
-                        public FtpProperties ftpProperties() {
-                            FtpProperties ftpProperties = new FtpProperties();
-                            return ftpProperties;
-                        }
-                    };
-    
 |方法|参数|返回值|说明|
 |----|----|----|----|
 |`void init(FileProperties fileProperties)`|`fileProperties`：文件配置|无|初始化方法|
@@ -102,20 +93,5 @@ SpringMvc项目[使用说明](https://github.com/wzc789376152/component/blob/mas
 | workDir  | 保存文件的文件夹 |
 | isCache  | 是否使用文件缓存，默认关闭，使用缓存前提是使用临时文件 |
 | isTemporary  | 是否使用临时文件，默认关闭 |
-
-### FtpProperties
-
-|  参数   | 说明  |
-|  ----  | ----  |
-| host  | ftp服务器路径 |
-| port  | ftp服务器端口 |
-| username  | ftp用户名 |
-| password  | ftp密码 |
-| encoding  | 编码格式 |
-| maxTotal  | 最大连接数 |
-| minIdel  | 最小空闲连接 |
-| maxIdle  | 最大空闲连接 |
-| maxWaitMillis  | 请求连接最大等待时间(毫秒) |
-| enable  | 是否开启ftp |
 
 ## 二开说明
