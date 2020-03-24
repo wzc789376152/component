@@ -1,0 +1,32 @@
+spring:
+  thymeleaf:
+    #模板的模式，支持 HTML, XML TEXT JAVASCRIPT
+    mode: HTML5
+    #编码 可不用配置
+    encoding: UTF-8
+    #开发配置为false,避免修改模板还要重启服务器
+    cache: false
+    #配置模板路径，默认是templates，可以不用配置
+    prefix: classpath:/templates
+    suffix: .html
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://www.yangmh.top:3306/default
+    #hikari: # springboot 2.0 ������hikari ,��˵����Ŀǰ������õ�java���ݿ����ӳ�
+    username: root
+    password: wzc@789376152
+  shiro:
+    login-url: /login
+    success-url: /
+    unauthorized-url: /error
+    hash-algorithm-name: md5
+    hash-iterations: 3
+    url-pers:
+      - per: anon
+        url: /login
+      - per: anon
+        url: /register
+      - per: anon
+        url: /error
+      - per: authc
+        url: /**

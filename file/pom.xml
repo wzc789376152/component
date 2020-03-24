@@ -7,7 +7,6 @@
         <groupId>com.github.wzc789376152</groupId>
         <artifactId>parent</artifactId>
         <version>1.1.0</version>
-        <relativePath>../parent/pom.xml</relativePath>
     </parent>
     <groupId>com.github.wzc789376152</groupId>
     <artifactId>file</artifactId>
