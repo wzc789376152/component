@@ -23,7 +23,7 @@
         <profile>
             <id>product</id>
             <properties>
-                <project.release.version>1.2.0</project.release.version>
+                <project.release.version>1.2.1</project.release.version>
             </properties>
         </profile>
     </profiles>

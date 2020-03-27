@@ -15,10 +15,34 @@ public abstract class TimerConfiguration {
     private ScheduledExecutorService scheduledExecutorService;
 
     public TimerConfiguration(int startTime, int period, String unit) {
-        init(startTime, period, unit);
+        initSchedule(startTime, period, unit);
     }
 
-    public void init(int startTime, int period, String unit) {
+    public TimerConfiguration(int waitTime) {
+        initBack(waitTime);
+    }
+
+    private void initBack(final int waitTime) {
+        if (scheduledExecutorService == null) {
+            scheduledExecutorService = new ScheduledThreadPoolExecutor(1);
+            Runnable runable = new Runnable() {
+                public void run() {
+                    while (!runable()) {
+                        if (waitTime != -1) {
+                            try {
+                                Thread.sleep(waitTime);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                }
+            };
+            scheduledExecutorService.execute(runable);
+        }
+    }
+
+    private void initSchedule(int startTime, int period, String unit) {
         if (scheduledExecutorService == null) {
             scheduledExecutorService = new ScheduledThreadPoolExecutor(1);
             Runnable runnable = new Runnable() {
@@ -65,5 +89,5 @@ public abstract class TimerConfiguration {
         }
     }
 
-    public abstract void runable();
+    public abstract boolean runable();
 }

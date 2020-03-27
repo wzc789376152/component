@@ -25,6 +25,7 @@ public class ShiroRealm extends AuthorizingRealm {
      * @param authenticationToken
      * @return
      * @throws AuthenticationException
+     *
      */
     @Override
     protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken authenticationToken)

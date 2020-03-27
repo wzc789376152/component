@@ -7,9 +7,9 @@ import com.github.wzc789376152.file.task.TimerConfiguration;
 
 import java.io.*;
 import java.nio.channels.FileChannel;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.Queue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Logger;
 
 /**
@@ -52,10 +52,11 @@ public abstract class FileServiceAbstract implements IFileService {
     private final String CACHESUFFIX = ".cache";
 
     //缓存文件队列
-    private Set<String> cacheDownloadFileSet = new HashSet<String>();
+    private Queue<String> cacheDownloadFileQueue = new LinkedBlockingQueue<String>();
 
     //上传文件队列
-    private Set<String> cacheUploadFileSet = new HashSet<String>();
+    private Queue<String> cacheUploadFileQueue = new LinkedBlockingQueue<String>();
+
 
     private boolean isTemp = true;
 
@@ -115,31 +116,50 @@ public abstract class FileServiceAbstract implements IFileService {
                 cacheFile = new File(getCacheDir());
             }
             //初始化要缓存上传的文件
-            FileFilter fileFilter = new FileFilter() {
+            final FileFilter fileFilter = new FileFilter() {
                 public boolean accept(File pathname) {
                     return pathname.getName().endsWith(CACHESUFFIX);
                 }
             };
-            Set<String> fileNames = new HashSet<String>();
-            for (File file : cacheFile.listFiles(fileFilter)) {
-                fileNames.add(file.getName().substring(0, file.getName().indexOf(CACHESUFFIX)));
-            }
-            if (fileNames.size() > 0) {
-                cacheUploadFileSet = fileNames;
-            }
-            //创建上传任务:默认10秒
-            new TimerConfiguration(-1, 10, "second") {
+            //创建缓存队列
+            final File finalCacheFile = cacheFile;
+            new TimerConfiguration(10000) {
                 @Override
-                public void runable() {
-                    fileUploadCache();
+                public boolean runable() {
+                    for (File file : finalCacheFile.listFiles(fileFilter)) {
+                        final String filename = file.getName().substring(0, file.getName().indexOf(CACHESUFFIX));
+                        if (!cacheUploadFileQueue.contains(filename)) {
+                            cacheUploadFileQueue.offer(filename);
+                        }
+                    }
+                    return false;
+                }
+            };
+            //创建上传任务
+            new TimerConfiguration(100) {
+                @Override
+                public boolean runable() {
+                    String filename = cacheUploadFileQueue.peek();
+                    if (filename != null) {
+                        synchronized (filename) {
+                            fileUploadCache(filename);
+                        }
+                    }
+                    return false;
                 }
             };
             logger.info("创建文件缓存上传任务");
-            //创建下载任务:默认10秒
-            new TimerConfiguration(-1, 10, "second") {
+            //创建下载任务
+            new TimerConfiguration(100) {
                 @Override
-                public void runable() {
-                    fileDownloadCache();
+                public boolean runable() {
+                    String filename = cacheDownloadFileQueue.peek();
+                    if (filename != null) {
+                        synchronized (filename) {
+                            fileDownloadCache(filename);
+                        }
+                    }
+                    return false;
                 }
             };
             logger.info("创建文件缓存下载任务");
@@ -153,10 +173,12 @@ public abstract class FileServiceAbstract implements IFileService {
             //创建清理临时文件任务
             new TimerConfiguration(fileProperties.getTaskStartTime(), fileProperties.getTaskPeriod(), fileProperties.getTaskUnit()) {
                 @Override
-                public void runable() {
+                public boolean runable() {
                     logger.info("=======开始清理临时文件========");
                     deleteTemp();
                     logger.info("=======清理临时文件成功========");
+                    return true;
+
                 }
             };
             logger.info("创建清理临时文件任务");
@@ -190,48 +212,41 @@ public abstract class FileServiceAbstract implements IFileService {
      * 下载缓存文件线程任务
      * 需等待线程执行完成，才能执行下个线程，防止同时上传多个文件，造成带宽占用
      */
-    private synchronized void fileDownloadCache() {
-        Set<String> fileSet = new HashSet<String>();
-        //复制下载队列
-        for (String filename : cacheDownloadFileSet) {
-            fileSet.add(filename);
-        }
-        for (String filename : fileSet) {
-            logger.info("=======开始缓存文件:" + filename + "========");
+    private synchronized void fileDownloadCache(String filename) {
+        logger.info("=======开始缓存文件:" + filename + "========");
+        try {
+            //将文件缓存到缓存文件夹
+            OutputStream outputStream = new FileOutputStream(new File(getCacheDir() + filename));
             try {
-                //将文件缓存到缓存文件夹
-                OutputStream outputStream = new FileOutputStream(new File(getCacheDir() + filename));
-                try {
-                    fileManager.download(filename, outputStream);
-                } catch (IOException e) {
-                    throw new IOException(e.getMessage());
-                } finally {
-                    outputStream.close();
-                }
-                //将缓存文件夹文件保存到临时文件夹
-                File cacheFile = new File(getCacheDir() + filename);
-                FileInputStream inputStream = new FileInputStream(cacheFile);
-                File dest = new File(getTemporaryDir() + filename);
-                FileChannel inputChannel = null;
-                FileChannel outputChannel = null;
-                try {
-                    inputChannel = inputStream.getChannel();
-                    outputChannel = new FileOutputStream(dest).getChannel();
-                    outputChannel.transferFrom(inputChannel, 0, inputChannel.size());
-                } catch (IOException e) {
-                    throw new IOException(e.getMessage());
-                } finally {
-                    inputChannel.close();
-                    outputChannel.close();
-                    inputStream.close();
-                    //删除缓存文件
-                    cacheFile.delete();
-                }
-                cacheDownloadFileSet.remove(filename);
-                logger.info("=======缓存文件:" + filename + "成功========");
-            } catch (Exception e) {
-                logger.warning(e.getMessage());
+                fileManager.download(filename, outputStream);
+            } catch (IOException e) {
+                throw new IOException(e.getMessage());
+            } finally {
+                outputStream.close();
             }
+            //将缓存文件夹文件保存到临时文件夹
+            File cacheFile = new File(getCacheDir() + filename);
+            FileInputStream inputStream = new FileInputStream(cacheFile);
+            File dest = new File(getTemporaryDir() + filename);
+            FileChannel inputChannel = null;
+            FileChannel outputChannel = null;
+            try {
+                inputChannel = inputStream.getChannel();
+                outputChannel = new FileOutputStream(dest).getChannel();
+                outputChannel.transferFrom(inputChannel, 0, inputChannel.size());
+            } catch (IOException e) {
+                throw new IOException(e.getMessage());
+            } finally {
+                inputChannel.close();
+                outputChannel.close();
+                inputStream.close();
+                //删除缓存文件
+                cacheFile.delete();
+            }
+            cacheDownloadFileQueue.remove(filename);
+            logger.info("=======缓存文件:" + filename + "成功========");
+        } catch (Exception e) {
+            logger.warning(e.getMessage());
         }
     }
 
@@ -239,54 +254,47 @@ public abstract class FileServiceAbstract implements IFileService {
      * 上传缓存文件线程任务
      * 需等待线程执行完成，才能执行下个线程，防止同时上传多个文件，造成带宽占用
      */
-    private synchronized void fileUploadCache() {
-        Set<String> fileSet = new HashSet<String>();
-        //复制上传队列
-        for (String filename : cacheUploadFileSet) {
-            fileSet.add(filename);
-        }
-        for (String filename : fileSet) {
-            logger.info("=======开始上传缓存文件:" + filename + "========");
-            try {
-                File tempFile = new File(getTemporaryDir() + filename);
-                File cacheFile = new File(getCacheDir() + filename + CACHESUFFIX);
-                if (!tempFile.exists()) {
-                    cacheUploadFileSet.remove(filename);
-                    if (cacheFile.exists()) {
-                        cacheFile.delete();
-                    }
-                    throw new IOException("文件不存在");
+    private synchronized void fileUploadCache(String filename) {
+        logger.info("=======开始上传缓存文件:" + filename + "========");
+        try {
+            File tempFile = new File(getTemporaryDir() + filename);
+            File cacheFile = new File(getCacheDir() + filename + CACHESUFFIX);
+            if (!tempFile.exists()) {
+                cacheUploadFileQueue.remove(filename);
+                if (cacheFile.exists()) {
+                    cacheFile.delete();
                 }
-                FileInputStream inputStream = new FileInputStream(tempFile);
-                File dest = new File(getCacheDir() + filename);
-                FileChannel inputChannel = null;
-                FileChannel outputChannel = null;
-                try {
-                    inputChannel = inputStream.getChannel();
-                    outputChannel = new FileOutputStream(dest).getChannel();
-                    outputChannel.transferFrom(inputChannel, 0, inputChannel.size());
-                } finally {
-                    inputChannel.close();
-                    outputChannel.close();
-                    inputStream.close();
-                }
-                InputStream cacheInputStream = new FileInputStream(new File(getCacheDir() + filename));
-                try {
-                    fileManager.upload(filename, cacheInputStream);
-                } catch (IOException e) {
-                    throw new IOException(e.getMessage());
-                } finally {
-                    cacheInputStream.close();
-                }
-                dest = new File(getCacheDir() + filename);
-                dest.delete();
-                cacheFile = new File(getCacheDir() + filename + CACHESUFFIX);
-                cacheFile.delete();
-                cacheUploadFileSet.remove(filename);
-                logger.info("=======上传缓存文件:" + filename + "成功========");
-            } catch (Exception e) {
-                logger.warning(e.getMessage());
+                throw new IOException("文件不存在");
             }
+            FileInputStream inputStream = new FileInputStream(tempFile);
+            File dest = new File(getCacheDir() + filename);
+            FileChannel inputChannel = null;
+            FileChannel outputChannel = null;
+            try {
+                inputChannel = inputStream.getChannel();
+                outputChannel = new FileOutputStream(dest).getChannel();
+                outputChannel.transferFrom(inputChannel, 0, inputChannel.size());
+            } finally {
+                inputChannel.close();
+                outputChannel.close();
+                inputStream.close();
+            }
+            InputStream cacheInputStream = new FileInputStream(new File(getCacheDir() + filename));
+            try {
+                fileManager.upload(filename, cacheInputStream);
+            } catch (IOException e) {
+                throw new IOException(e.getMessage());
+            } finally {
+                cacheInputStream.close();
+            }
+            dest = new File(getCacheDir() + filename);
+            dest.delete();
+            cacheFile = new File(getCacheDir() + filename + CACHESUFFIX);
+            cacheFile.delete();
+            cacheUploadFileQueue.remove(filename);
+            logger.info("=======上传缓存文件:" + filename + "成功========");
+        } catch (Exception e) {
+            logger.warning(e.getMessage());
         }
     }
 
@@ -318,7 +326,7 @@ public abstract class FileServiceAbstract implements IFileService {
 
     public void submit(String filename) throws IOException {
         if (isCache) {
-            cacheUploadFileSet.add(filename);
+            cacheUploadFileQueue.add(filename);
             File cacheFile = new File(getCacheDir() + filename + CACHESUFFIX);
             OutputStream outputStream = new FileOutputStream(cacheFile);
             outputStream.write(0);//创建缓存文件
@@ -348,7 +356,7 @@ public abstract class FileServiceAbstract implements IFileService {
                 //直接下载
                 fileManager.download(fileName, outputStream);
                 if (isCache) {
-                    cacheDownloadFileSet.add(fileName);
+                    cacheDownloadFileQueue.add(fileName);
                     logger.info(fileName + "加入文件下载缓存队列！");
                 }
             } else {
