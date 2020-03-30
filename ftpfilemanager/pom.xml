@@ -34,13 +34,13 @@
     </description>
     <url>https://github.com/wzc789376152/component/tree/master/ftpfilemanager</url>
     <properties>
-        <project.release.version>1.2.0-SNAPSHOT</project.release.version>
+        <project.release.version>1.3.0-SNAPSHOT</project.release.version>
     </properties>
     <profiles>
         <profile>
             <id>product</id>
             <properties>
-                <project.release.version>1.2.0</project.release.version>
+                <project.release.version>1.3.0</project.release.version>
             </properties>
         </profile>
     </profiles>
@@ -60,7 +60,7 @@
         <dependency>
             <groupId>com.github.wzc789376152</groupId>
             <artifactId>file</artifactId>
-            <version>1.2.0-SNAPSHOT</version>
+            <version>1.3.0-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

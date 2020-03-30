@@ -50,6 +50,7 @@ public interface IFileService {
      * 获取文件上传进度位置
      *
      * @param filename 文件名
+     * @param token 文件标识
      * @return 位置
      * @throws IOException 异常
      */
@@ -67,10 +68,11 @@ public interface IFileService {
     /**
      * 上传临时文件(分片文件)
      *
-     * @param inputStream
-     * @param filename
-     * @param token
-     * @throws IOException
+     * @param inputStream 输入文件stream
+     * @param filename 文件名
+     * @param token 文件标识
+     * @param position 位置
+     * @throws IOException 抛出异常
      */
     void uploadCache(InputStream inputStream, String filename, String token, Long position) throws IOException;
 

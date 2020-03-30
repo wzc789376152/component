@@ -55,8 +55,8 @@ public interface IFileManager {
     /**
      * 修改文件保存地址
      *
-     * @param filepath
-     * @throws IOException
+     * @param filepath 文件夹
+     * @throws IOException 异常
      */
     void changeWorkDir(String filepath) throws IOException;
 }
