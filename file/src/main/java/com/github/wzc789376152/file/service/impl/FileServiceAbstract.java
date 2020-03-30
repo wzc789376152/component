@@ -6,10 +6,13 @@ import com.github.wzc789376152.file.service.IFileService;
 import com.github.wzc789376152.file.task.TimerConfiguration;
 
 import java.io.*;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.logging.Logger;
 
 /**
@@ -51,12 +54,18 @@ public abstract class FileServiceAbstract implements IFileService {
      */
     private final String CACHESUFFIX = ".cache";
 
+    private final String BLOCKSUFFIX = ".block";
+
     //缓存文件队列
-    private Queue<String> cacheDownloadFileQueue = new LinkedBlockingQueue<String>();
+//    private Queue<String> cacheDownloadFileQueue = new LinkedBlockingQueue<String>();
 
     //上传文件队列
-    private Queue<String> cacheUploadFileQueue = new LinkedBlockingQueue<String>();
+//    private Queue<String> cacheUploadFileQueue = new LinkedBlockingQueue<String>();
 
+    //下载文件线程队列
+    private ExecutorService cacheDownloadExecutor = Executors.newCachedThreadPool();
+    //上传文件队列
+    private ExecutorService cacheUploadExecutor = Executors.newCachedThreadPool();
 
     private boolean isTemp = true;
 
@@ -109,12 +118,6 @@ public abstract class FileServiceAbstract implements IFileService {
             if (!isTemp) {
                 throw new RuntimeException("文件缓存需要开启临时文件");
             }
-            //创建缓存文件夹；需要服务器权限
-            File cacheFile = new File(getCacheDir());
-            if (!cacheFile.exists()) {
-                cacheFile.mkdirs();
-                cacheFile = new File(getCacheDir());
-            }
             //初始化要缓存上传的文件
             final FileFilter fileFilter = new FileFilter() {
                 public boolean accept(File pathname) {
@@ -122,54 +125,20 @@ public abstract class FileServiceAbstract implements IFileService {
                 }
             };
             //创建缓存队列
-            final File finalCacheFile = cacheFile;
-            new TimerConfiguration(10000) {
-                @Override
-                public boolean runable() {
-                    for (File file : finalCacheFile.listFiles(fileFilter)) {
-                        final String filename = file.getName().substring(0, file.getName().indexOf(CACHESUFFIX));
-                        if (!cacheUploadFileQueue.contains(filename)) {
-                            cacheUploadFileQueue.offer(filename);
-                        }
-                    }
-                    return false;
-                }
-            };
-            //创建上传任务
-            new TimerConfiguration(100) {
-                @Override
-                public boolean runable() {
-                    String filename = cacheUploadFileQueue.peek();
-                    if (filename != null) {
-                        synchronized (filename) {
+            final File finalCacheFile = new File(getCacheDir());
+            if (finalCacheFile.exists()) {
+                for (File file : finalCacheFile.listFiles(fileFilter)) {
+                    final String filename = file.getName().substring(0, file.getName().indexOf(CACHESUFFIX));
+                    Runnable runnable = new Runnable() {
+                        public void run() {
                             fileUploadCache(filename);
                         }
-                    }
-                    return false;
+                    };
+                    cacheUploadExecutor.execute(runnable);
                 }
-            };
-            logger.info("创建文件缓存上传任务");
-            //创建下载任务
-            new TimerConfiguration(100) {
-                @Override
-                public boolean runable() {
-                    String filename = cacheDownloadFileQueue.peek();
-                    if (filename != null) {
-                        synchronized (filename) {
-                            fileDownloadCache(filename);
-                        }
-                    }
-                    return false;
-                }
-            };
-            logger.info("创建文件缓存下载任务");
+            }
         }
         if (isTemp) {
-            //创建临时文件夹；需要服务器权限
-            File tempFile = new File(getTemporaryDir());
-            if (!tempFile.exists()) {
-                tempFile.mkdirs();
-            }
             //创建清理临时文件任务
             new TimerConfiguration(fileProperties.getTaskStartTime(), fileProperties.getTaskPeriod(), fileProperties.getTaskUnit()) {
                 @Override
@@ -185,11 +154,24 @@ public abstract class FileServiceAbstract implements IFileService {
         }
     }
 
+    private void mkdirs(String filepath) throws IOException {
+        try {
+            File file = new File(filepath);
+            if (!file.exists()) {
+                file.mkdirs();
+            }
+        } catch (Exception e) {
+            throw new IOException("创建文件夹：" + filepath + "失败，请检查系统权限");
+        }
+    }
+
     private void deleteTemp() {
         File file = new File(getTemporaryDir());
-        File[] files = file.listFiles();
-        for (File f : files) {
-            delFile(f);
+        if (file.exists()) {
+            File[] files = file.listFiles();
+            for (File f : files) {
+                delFile(f);
+            }
         }
     }
 
@@ -208,6 +190,12 @@ public abstract class FileServiceAbstract implements IFileService {
         logger.info(file.getName() + "删除成功");
     }
 
+    private void delFiles(File[] files) {
+        for (File file : files) {
+            delFile(file);
+        }
+    }
+
     /**
      * 下载缓存文件线程任务
      * 需等待线程执行完成，才能执行下个线程，防止同时上传多个文件，造成带宽占用
@@ -215,6 +203,7 @@ public abstract class FileServiceAbstract implements IFileService {
     private synchronized void fileDownloadCache(String filename) {
         logger.info("=======开始缓存文件:" + filename + "========");
         try {
+            mkdirs(getCacheDir());
             //将文件缓存到缓存文件夹
             OutputStream outputStream = new FileOutputStream(new File(getCacheDir() + filename));
             try {
@@ -225,6 +214,7 @@ public abstract class FileServiceAbstract implements IFileService {
                 outputStream.close();
             }
             //将缓存文件夹文件保存到临时文件夹
+            mkdirs(getTemporaryDir());
             File cacheFile = new File(getCacheDir() + filename);
             FileInputStream inputStream = new FileInputStream(cacheFile);
             File dest = new File(getTemporaryDir() + filename);
@@ -243,7 +233,7 @@ public abstract class FileServiceAbstract implements IFileService {
                 //删除缓存文件
                 cacheFile.delete();
             }
-            cacheDownloadFileQueue.remove(filename);
+//            cacheDownloadFileQueue.remove(filename);
             logger.info("=======缓存文件:" + filename + "成功========");
         } catch (Exception e) {
             logger.warning(e.getMessage());
@@ -257,41 +247,29 @@ public abstract class FileServiceAbstract implements IFileService {
     private synchronized void fileUploadCache(String filename) {
         logger.info("=======开始上传缓存文件:" + filename + "========");
         try {
+            mkdirs(getTemporaryDir());
             File tempFile = new File(getTemporaryDir() + filename);
             File cacheFile = new File(getCacheDir() + filename + CACHESUFFIX);
             if (!tempFile.exists()) {
-                cacheUploadFileQueue.remove(filename);
+//                cacheUploadFileQueue.remove(filename);
                 if (cacheFile.exists()) {
                     cacheFile.delete();
                 }
                 throw new IOException("文件不存在");
             }
             FileInputStream inputStream = new FileInputStream(tempFile);
-            File dest = new File(getCacheDir() + filename);
-            FileChannel inputChannel = null;
-            FileChannel outputChannel = null;
             try {
-                inputChannel = inputStream.getChannel();
-                outputChannel = new FileOutputStream(dest).getChannel();
-                outputChannel.transferFrom(inputChannel, 0, inputChannel.size());
-            } finally {
-                inputChannel.close();
-                outputChannel.close();
-                inputStream.close();
-            }
-            InputStream cacheInputStream = new FileInputStream(new File(getCacheDir() + filename));
-            try {
-                fileManager.upload(filename, cacheInputStream);
+                fileManager.upload(filename, inputStream);
             } catch (IOException e) {
                 throw new IOException(e.getMessage());
             } finally {
-                cacheInputStream.close();
+                inputStream.close();
             }
-            dest = new File(getCacheDir() + filename);
-            dest.delete();
+//            dest = new File(getCacheDir() + filename);
+//            dest.delete();
             cacheFile = new File(getCacheDir() + filename + CACHESUFFIX);
             cacheFile.delete();
-            cacheUploadFileQueue.remove(filename);
+//            cacheUploadFileQueue.remove(filename);
             logger.info("=======上传缓存文件:" + filename + "成功========");
         } catch (Exception e) {
             logger.warning(e.getMessage());
@@ -303,9 +281,39 @@ public abstract class FileServiceAbstract implements IFileService {
         return fileList;
     }
 
+    public Long getFilePosition(final String filename, final String token) {
+        File tempFile = new File(getTemporaryDir());
+        if (!tempFile.exists()) {
+            return Long.valueOf(0);
+        }
+        final FileFilter fileFilter = new FileFilter() {
+            public boolean accept(File pathname) {
+                return pathname.getName().startsWith(filename + "__" + token);
+            }
+        };
+        File[] files = tempFile.listFiles(fileFilter);
+        if (files.length == 0) {
+            return Long.valueOf(0);
+        }
+        Arrays.sort(files, new Comparator<File>() {
+            public int compare(File o1, File o2) {
+                long diff = o1.lastModified() - o2.lastModified();
+                if (diff < 0) {
+                    return 1;//倒序正序控制
+                } else if (diff == 0) {
+                    return 0;
+                } else {
+                    return -1;//倒序正序控制
+                }
+            }
+        });
+        String[] filenames = files[0].getName().split("__");
+        return Long.valueOf(filenames[2]);
+    }
 
     public void uploadCache(InputStream inputStream, String filename) throws IOException {
         if (isTemp) {
+            mkdirs(getTemporaryDir());
             File dest = new File(getTemporaryDir() + filename);
             FileChannel inputChannel = null;
             FileChannel outputChannel = null;
@@ -324,13 +332,25 @@ public abstract class FileServiceAbstract implements IFileService {
         }
     }
 
-    public void submit(String filename) throws IOException {
+    public void uploadCache(InputStream inputStream, String filename, String token, Long position) throws IOException {
+        if (token != null && position != null) {
+            filename = filename + "__" + token + "__" + position;
+        }
+        uploadCache(inputStream, filename);
+    }
+
+    public void submit(final String filename) throws IOException {
         if (isCache) {
-            cacheUploadFileQueue.add(filename);
+            mkdirs(getCacheDir());
             File cacheFile = new File(getCacheDir() + filename + CACHESUFFIX);
             OutputStream outputStream = new FileOutputStream(cacheFile);
             outputStream.write(0);//创建缓存文件
             outputStream.close();
+            cacheUploadExecutor.execute(new Runnable() {
+                public void run() {
+                    fileUploadCache(filename);
+                }
+            });
             logger.info(filename + "加入文件上传缓存队列！");
         } else {
             if (isTemp) {
@@ -349,14 +369,70 @@ public abstract class FileServiceAbstract implements IFileService {
         }
     }
 
-    public void download(String fileName, OutputStream outputStream) throws IOException {
+    public void submit(String filename, String token) throws IOException {
+        final String fileName = filename;
+        final String toKen = token;
+        File tempFile = new File(getTemporaryDir());
+        final FileFilter fileFilter = new FileFilter() {
+            public boolean accept(File pathname) {
+                return pathname.getName().startsWith(fileName + "__" + toKen);
+            }
+        };
+        File[] files = tempFile.listFiles(fileFilter);
+        Arrays.sort(files, new Comparator<File>() {
+            public int compare(File o1, File o2) {
+                long diff = o1.lastModified() - o2.lastModified();
+                if (diff > 0) {
+                    return 1;//倒序正序控制
+                } else if (diff == 0) {
+                    return 0;
+                } else {
+                    return -1;//倒序正序控制
+                }
+            }
+        });
+        File dest = new File(getTemporaryDir() + filename);
+        FileChannel outChannel = null;
+        int byteSize = 1024 * 8;
+        try {
+            outChannel = new FileOutputStream(dest).getChannel();
+            for (File f : files) {
+                FileChannel fc = new FileInputStream(f).getChannel();
+                ByteBuffer bb = ByteBuffer.allocate(byteSize);
+                while (fc.read(bb) != -1) {
+                    bb.flip();
+                    outChannel.write(bb);
+                    bb.clear();
+                }
+                fc.close();
+            }
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        } finally {
+            try {
+                if (outChannel != null) {
+                    outChannel.close();
+                }
+            } catch (IOException ignore) {
+            }
+        }
+        submit(filename);
+        delFiles(files);
+    }
+
+    public void download(final String fileName, OutputStream outputStream) throws IOException {
         if (isTemp) {
             File tempFile = new File(getTemporaryDir() + fileName);
             if (!tempFile.exists()) {
                 //直接下载
                 fileManager.download(fileName, outputStream);
                 if (isCache) {
-                    cacheDownloadFileQueue.add(fileName);
+//                    cacheDownloadFileQueue.add(fileName);
+                    cacheDownloadExecutor.execute(new Runnable() {
+                        public void run() {
+                            fileDownloadCache(fileName);
+                        }
+                    });
                     logger.info(fileName + "加入文件下载缓存队列！");
                 }
             } else {

@@ -2,6 +2,7 @@ package com.github.wzc789376152.filedemospringboot.controller;
 
 import com.github.wzc789376152.file.service.IFileService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -46,5 +47,42 @@ public class FileController {
             }
         }
         return true;
+    }
+
+    @PostMapping("upload1")
+    public boolean upload1(HttpServletRequest request) throws IOException {
+//将当前上下文初始化给  CommonsMutipartResolver （多部分解析器）
+        CommonsMultipartResolver multipartResolver = new CommonsMultipartResolver(
+                request.getSession().getServletContext());
+        String token = request.getParameter("filetoken");
+        Long position = Long.valueOf(request.getParameter("position"));
+        //检查form中是否有enctype="multipart/form-data"
+        List<String> fileList = new ArrayList<>();
+        if (multipartResolver.isMultipart(request)) {
+            //将request变成多部分request
+            MultipartHttpServletRequest multiRequest = (MultipartHttpServletRequest) request;
+            //获取multiRequest 中所有的文件名
+            Iterator iter = multiRequest.getFileNames();
+            while (iter.hasNext()) {
+                //一次遍历所有文件
+                MultipartFile file = multiRequest.getFile(iter.next().toString());
+                if (file != null) {
+                    fileService.uploadCache(file.getInputStream(), file.getOriginalFilename(), token, position);
+                    fileList.add(file.getOriginalFilename());
+                }
+            }
+        }
+        return true;
+    }
+
+    @PostMapping("submit")
+    public boolean submit(String filename, String token) throws IOException {
+        fileService.submit(filename, token);
+        return true;
+    }
+
+    @GetMapping("getPosition")
+    public Long getPosition(String filename, String filetoken) throws IOException {
+        return fileService.getFilePosition(filename, filetoken);
     }
 }

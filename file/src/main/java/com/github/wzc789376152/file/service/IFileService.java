@@ -12,12 +12,14 @@ public interface IFileService {
 
     /**
      * 获取临时文件夹路径
+     *
      * @return 返回临时文件夹路径
      */
     String getTemporaryDir();
 
     /**
      * 获取缓存文件夹路径
+     *
      * @return 返回缓存文件夹路径
      */
     String getCacheDir();
@@ -31,6 +33,7 @@ public interface IFileService {
 
     /**
      * 获取文件管理器
+     *
      * @return 返回文件处理器
      */
     IFileManager getFileManager();
@@ -44,16 +47,35 @@ public interface IFileService {
     List<String> getFileNameList() throws IOException;
 
     /**
-     * 上传临时文件
+     * 获取文件上传进度位置
+     *
+     * @param filename 文件名
+     * @return 位置
+     * @throws IOException 异常
+     */
+    Long getFilePosition(String filename, String token) throws IOException;
+
+    /**
+     * 上传临时文件(整文件)
      *
      * @param inputStream 输入文件stream
-     * @param filename 文件名
+     * @param filename    文件名
      * @throws IOException 抛出异常
      */
     void uploadCache(InputStream inputStream, String filename) throws IOException;
 
     /**
-     * 将临时文件持久化
+     * 上传临时文件(分片文件)
+     *
+     * @param inputStream
+     * @param filename
+     * @param token
+     * @throws IOException
+     */
+    void uploadCache(InputStream inputStream, String filename, String token, Long position) throws IOException;
+
+    /**
+     * 将临时文件持久化(整文件)
      *
      * @param filename 文件名
      * @throws IOException 抛出异常
@@ -61,9 +83,18 @@ public interface IFileService {
     void submit(String filename) throws IOException;
 
     /**
+     * 将临时文件持久化（分片文件）
+     *
+     * @param filename 文件名
+     * @param token    文件标识
+     * @throws IOException 抛出异常
+     */
+    void submit(String filename, String token) throws IOException;
+
+    /**
      * 下载文件
      *
-     * @param fileName 文件名
+     * @param fileName     文件名
      * @param outputStream 输出文件stream
      * @throws IOException 抛出异常
      */
