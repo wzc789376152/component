@@ -73,4 +73,12 @@ public class LocalFileManangerAbstract implements IFileManager {
             file.delete();
         }
     }
+
+    public void changeWorkDir(String filepath) throws IOException {
+        fileProperties.setWorkDir(System.getProperty("user.dir") + (fileProperties.getProject() == null ? "" : (File.separator + fileProperties.getProject())) + FilePathUtils.formatPath(filepath));
+        File file = new File(fileProperties.getWorkDir());
+        if (!file.exists()) {
+            file.mkdirs();
+        }
+    }
 }

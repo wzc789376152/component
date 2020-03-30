@@ -29,7 +29,7 @@ public interface IFileManager {
     /**
      * 文件上传
      *
-     * @param filename 文件名
+     * @param filename    文件名
      * @param inputStream 输入文件stream
      * @throws IOException 抛出文件异常
      */
@@ -38,7 +38,7 @@ public interface IFileManager {
     /**
      * 文件下载
      *
-     * @param filename 文件名
+     * @param filename     文件名
      * @param outputStream 输出文件stream
      * @throws IOException 抛出文件异常
      */
@@ -51,4 +51,12 @@ public interface IFileManager {
      * @throws IOException 抛出文件异常
      */
     void delete(String filename) throws IOException;
+
+    /**
+     * 修改文件保存地址
+     *
+     * @param filepath
+     * @throws IOException
+     */
+    void changeWorkDir(String filepath) throws IOException;
 }

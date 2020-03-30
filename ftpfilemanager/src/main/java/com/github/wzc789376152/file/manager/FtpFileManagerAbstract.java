@@ -101,6 +101,25 @@ public abstract class FtpFileManagerAbstract implements IFileManager {
         }
     }
 
+    public void changeWorkDir(String filepath) throws IOException {
+        FTPClient ftpClient = ftpPool.getFTPClient();
+        if (filepath.endsWith(File.separator)) {
+            filepath = filepath.substring(0, filepath.length() - 1);
+        }
+        filepath = filepath.replace(File.separator, "/");
+        //初始化保存路径
+        try {
+            if (!ftpClient.changeWorkingDirectory(filepath)) {
+                if (ftpClient.makeDirectory(filepath)) {
+                    ftpClient.changeWorkingDirectory(filepath);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            ftpPool.returnFTPClient(ftpClient);
+        }
+    }
+
     public void setFtpProperties(FtpProperties ftpProperties) {
         this.ftpProperties = ftpProperties;
     }
