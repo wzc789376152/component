@@ -13,14 +13,19 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://www.yangmh.top:3306/default
     #hikari: # springboot 2.0 ������hikari ,��˵����Ŀǰ������õ�java���ݿ����ӳ�
-    username: root
-    password: wzc@789376152
+    username: default
+    password: FnLHppCFM3s2DhGJ
+  redis:
+    host: www.yangmh.top
+    port: 6379
+    password: wzc789376152
   shiro:
     login-url: /login
     success-url: /
     unauthorized-url: /error
-    hash-algorithm-name: md5
     hash-iterations: 3
+    redis:
+      enable: true
     url-pers:
       - per: anon
         url: /login
@@ -30,3 +35,6 @@ spring:
         url: /error
       - per: authc
         url: /**
+    cipher-key: ljLFyBYe4TmcH1FEhAg1XQ==
+    max-age: 2592000
+    session-time-out: 2592000000

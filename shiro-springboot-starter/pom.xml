@@ -65,5 +65,12 @@
             <artifactId>shiro-ehcache</artifactId>
             <version>1.5.1</version>
         </dependency>
+        <!--shiro-redis-->
+        <dependency>
+            <groupId>org.crazycake</groupId>
+            <artifactId>shiro-redis</artifactId>
+            <version>3.2.3</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 </project>

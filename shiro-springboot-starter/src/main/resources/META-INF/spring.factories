@@ -1,1 +1,1 @@
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=com.github.wzc789376152.shiro.config.ShiroConfiguration
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=com.github.wzc789376152.shiro.config.ShiroConfiguration,com.github.wzc789376152.shiro.config.PasswordGenerateComponent,com.github.wzc789376152.shiro.config.ShiroRedisConfiguration

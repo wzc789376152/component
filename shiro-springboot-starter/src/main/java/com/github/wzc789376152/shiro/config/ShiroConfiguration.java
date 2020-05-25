@@ -3,8 +3,12 @@ package com.github.wzc789376152.shiro.config;
 import com.github.wzc789376152.shiro.properties.ShiroProperty;
 import com.github.wzc789376152.shiro.properties.ShiroUrlPer;
 import org.apache.shiro.authc.credential.HashedCredentialsMatcher;
+import org.apache.shiro.cache.CacheManager;
 import org.apache.shiro.cache.ehcache.EhCacheManager;
 import org.apache.shiro.codec.Base64;
+import org.apache.shiro.session.mgt.eis.AbstractSessionDAO;
+import org.apache.shiro.session.mgt.eis.MemorySessionDAO;
+import org.apache.shiro.session.mgt.eis.SessionDAO;
 import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
 import org.apache.shiro.web.mgt.CookieRememberMeManager;
 import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
@@ -27,6 +31,10 @@ import java.util.Map;
 public class ShiroConfiguration {
     @Autowired
     private ShiroProperty shiroProperty;
+    @Autowired(required = false)
+    private CacheManager cacheManager;
+    @Autowired(required = false)
+    private SessionDAO sessionDAO;
 
     @Bean
     public ShiroRealm shiroRealm() {
@@ -40,11 +48,8 @@ public class ShiroConfiguration {
 
     @Bean
     public HashedCredentialsMatcher hashedCredentialsMatcher() {
-        if (shiroProperty.getHashAlgorithmName() == null) {
-            return null;
-        }
         HashedCredentialsMatcher hashedCredentialsMatcher = new HashedCredentialsMatcher();
-        hashedCredentialsMatcher.setHashAlgorithmName(shiroProperty.getHashAlgorithmName());
+        hashedCredentialsMatcher.setHashAlgorithmName("md5");
         //散列的次数
         hashedCredentialsMatcher.setHashIterations(shiroProperty.getHashIterations());
         return hashedCredentialsMatcher;
@@ -54,7 +59,10 @@ public class ShiroConfiguration {
     public DefaultWebSecurityManager securityManager() {
         DefaultWebSecurityManager securityManager = new DefaultWebSecurityManager();
         securityManager.setRealm(shiroRealm());
-        securityManager.setCacheManager(ehCacheManager());
+        if (cacheManager == null) {
+            cacheManager = ehCacheManager();
+        }
+        securityManager.setCacheManager(cacheManager);
         securityManager.setRememberMeManager(rememberMeManager());
         securityManager.setSessionManager(sessionManager());
         return securityManager;
@@ -69,16 +77,10 @@ public class ShiroConfiguration {
     public CookieRememberMeManager rememberMeManager() {
         CookieRememberMeManager cookieRememberMeManager = new CookieRememberMeManager();
         //rememberme cookie加密的密钥 建议每个项目都不一样 默认AES算法 密钥长度（128 256 512 位），通过以下代码可以获取
-        byte[] cipherKey = Base64.decode("wGiHplamyXlVB11UXWol8g==");
+        byte[] cipherKey = Base64.decode(shiroProperty.getCipherKey());
         cookieRememberMeManager.setCipherKey(cipherKey);
         cookieRememberMeManager.setCookie(rememberMeCookie());
         return cookieRememberMeManager;
-    }
-
-    @Bean(name = "ehCacheManager")
-    public EhCacheManager ehCacheManager() {
-        EhCacheManager ehCacheManager = new EhCacheManager();
-        return ehCacheManager;
     }
 
     @Bean
@@ -87,16 +89,18 @@ public class ShiroConfiguration {
         SimpleCookie simpleCookie = new SimpleCookie("rememberMe");
         //如果httyOnly设置为true，则客户端不会暴露给客户端脚本代码，使用HttpOnly cookie有助于减少某些类型的跨站点脚本攻击；
         simpleCookie.setHttpOnly(true);
-        //记住我cookie生效时间,默认30天 ,单位秒：60 * 60 * 24 * 30
-        simpleCookie.setMaxAge(259200);
+        //记住我cookie生效时间
+        simpleCookie.setMaxAge(shiroProperty.getMaxAge());
         return simpleCookie;
     }
 
     @Bean(name = "sessionManager")
     public DefaultWebSessionManager sessionManager() {
         DefaultWebSessionManager sessionManager = new DefaultWebSessionManager();
-        // 设置session过期时间3600s
-        sessionManager.setGlobalSessionTimeout(3600000L);
+        sessionManager.setGlobalSessionTimeout(shiroProperty.getSessionTimeOut());
+        if (sessionDAO != null) {
+            sessionManager.setSessionDAO(sessionDAO);
+        }
         sessionManager.setSessionIdCookie(sessionIdCookie());
         return sessionManager;
     }
@@ -112,7 +116,7 @@ public class ShiroConfiguration {
         simpleCookie.setHttpOnly(true);
         simpleCookie.setPath("/");
         //maxAge=-1表示浏览器关闭时失效此Cookie
-        simpleCookie.setMaxAge(25920000);
+        simpleCookie.setMaxAge(shiroProperty.getMaxAge());
         return simpleCookie;
     }
 
@@ -132,5 +136,10 @@ public class ShiroConfiguration {
         shiroFilterFactoryBean.setUnauthorizedUrl(shiroProperty.getUnauthorizedUrl());
         shiroFilterFactoryBean.setLoginUrl(shiroProperty.getLoginUrl());
         return shiroFilterFactoryBean;
+    }
+
+    public EhCacheManager ehCacheManager() {
+        EhCacheManager ehCacheManager = new EhCacheManager();
+        return ehCacheManager;
     }
 }
