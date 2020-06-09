@@ -4,6 +4,7 @@ import com.github.wzc789376152.file.FileProperties;
 import com.github.wzc789376152.file.manager.IFileManager;
 import com.github.wzc789376152.file.service.IFileService;
 import com.github.wzc789376152.file.task.TimerConfiguration;
+import com.github.wzc789376152.file.utils.FileSyncUtils;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -215,26 +216,28 @@ public abstract class FileServiceAbstract implements IFileService {
             }
             //将缓存文件夹文件保存到临时文件夹
             mkdirs(getTemporaryDir());
-            File cacheFile = new File(getCacheDir() + filename);
-            FileInputStream inputStream = new FileInputStream(cacheFile);
-            File dest = new File(getTemporaryDir() + filename);
-            FileChannel inputChannel = null;
-            FileChannel outputChannel = null;
-            try {
-                inputChannel = inputStream.getChannel();
-                outputChannel = new FileOutputStream(dest).getChannel();
-                outputChannel.transferFrom(inputChannel, 0, inputChannel.size());
-            } catch (IOException e) {
-                throw new IOException(e.getMessage());
-            } finally {
-                inputChannel.close();
-                outputChannel.close();
-                inputStream.close();
-                //删除缓存文件
-                cacheFile.delete();
-            }
+            synchronized (FileSyncUtils.getObject(getTemporaryDir() + filename)) {
+                File cacheFile = new File(getCacheDir() + filename);
+                FileInputStream inputStream = new FileInputStream(cacheFile);
+                File dest = new File(getTemporaryDir() + filename);
+                FileChannel inputChannel = null;
+                FileChannel outputChannel = null;
+                try {
+                    inputChannel = inputStream.getChannel();
+                    outputChannel = new FileOutputStream(dest).getChannel();
+                    outputChannel.transferFrom(inputChannel, 0, inputChannel.size());
+                } catch (IOException e) {
+                    throw new IOException(e.getMessage());
+                } finally {
+                    inputChannel.close();
+                    outputChannel.close();
+                    inputStream.close();
+                    //删除缓存文件
+                    cacheFile.delete();
+                }
 //            cacheDownloadFileQueue.remove(filename);
-            logger.info("=======缓存文件:" + filename + "成功========");
+                logger.info("=======缓存文件:" + filename + "成功========");
+            }
         } catch (Exception e) {
             logger.warning(e.getMessage());
         }
@@ -423,17 +426,20 @@ public abstract class FileServiceAbstract implements IFileService {
     public void download(final String fileName, OutputStream outputStream) throws IOException {
         if (isTemp) {
             File tempFile = new File(getTemporaryDir() + fileName);
-            if (!tempFile.exists()) {
+            if (!tempFile.exists() || tempFile.length() == 0) {
                 //直接下载
-                fileManager.download(fileName, outputStream);
-                if (isCache) {
-//                    cacheDownloadFileQueue.add(fileName);
-                    cacheDownloadExecutor.execute(new Runnable() {
-                        public void run() {
-                            fileDownloadCache(fileName);
-                        }
-                    });
-                    logger.info(fileName + "加入文件下载缓存队列！");
+                synchronized (FileSyncUtils.getObject(getTemporaryDir() + fileName)) {
+                    if (outputStream != null) {
+                        fileManager.download(fileName, outputStream);
+                    }
+                    if (isCache) {
+                        cacheDownloadExecutor.execute(new Runnable() {
+                            public void run() {
+                                fileDownloadCache(fileName);
+                            }
+                        });
+                        logger.info(fileName + "加入文件下载缓存队列！");
+                    }
                 }
             } else {
                 InputStream tempInputStream = new FileInputStream(tempFile);

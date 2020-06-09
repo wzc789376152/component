@@ -51,7 +51,7 @@ public class FileController {
 
     @PostMapping("upload1")
     public boolean upload1(HttpServletRequest request) throws IOException {
-//将当前上下文初始化给  CommonsMutipartResolver （多部分解析器）
+        //将当前上下文初始化给  CommonsMutipartResolver （多部分解析器）
         CommonsMultipartResolver multipartResolver = new CommonsMultipartResolver(
                 request.getSession().getServletContext());
         String token = request.getParameter("filetoken");
