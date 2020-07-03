@@ -26,7 +26,7 @@
     <description>
         shiro权限控制starter
     </description>
-    <url>https://github.com/wzc789376152/component/tree/master/shirospringbootstarter</url>
+    <url>https://github.com/wzc789376152/component/tree/master/shiro-springboot-starter</url>
     <build>
         <plugins>
             <plugin>

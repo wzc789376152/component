@@ -51,7 +51,7 @@ public class ${table.controllerName}{
                 #set($getprefix="get")
             #end
             #if(!${field.keyFlag})
-            entity.set${field.capitalName}(add.${getprefix}${field.capitalName}());
+        entity.set${field.capitalName}(add.${getprefix}${field.capitalName}());
             #end
         #end
         return baseService.saveOrUpdate(entity);
@@ -65,7 +65,7 @@ public class ${table.controllerName}{
             #else
                 #set($getprefix="get")
             #end
-            entity.set${field.capitalName}(update.${getprefix}${field.capitalName}());
+        entity.set${field.capitalName}(update.${getprefix}${field.capitalName}());
         #end
         return baseService.saveOrUpdate(entity);
     }

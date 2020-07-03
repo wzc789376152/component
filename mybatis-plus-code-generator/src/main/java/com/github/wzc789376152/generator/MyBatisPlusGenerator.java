@@ -28,6 +28,7 @@ public class MyBatisPlusGenerator {
     private String author = "yangmenghen";
     private boolean override = false;
     private String packageName = "";
+    private String layoutUrl = "";
 
 
     //以下参数已更换为动态获取
@@ -37,7 +38,7 @@ public class MyBatisPlusGenerator {
     //private static String packge_name="com.lg.eappdoorcontrolapi";
 
 
-    public void run(JdbcPropertis jdbcPropertis, String packageName) throws IOException {
+    public void run(JdbcPropertis jdbcPropertis, String packageName, String layoutUrl) throws IOException {
         Scanner scanner = new Scanner(System.in);
         System.out.print("是否生成所有表？(y/n)" );
         String isAll = scanner.next();
@@ -58,6 +59,7 @@ public class MyBatisPlusGenerator {
         }
         this.jdbcPropertis = jdbcPropertis;
         this.packageName = packageName;
+        this.layoutUrl = layoutUrl;
         getCode_model();
     }
 
@@ -150,6 +152,7 @@ public class MyBatisPlusGenerator {
                 Map<String, Object> map = new HashMap<String, Object>();
                 map.put("abc", this.getConfig().getGlobalConfig().getAuthor() + "-mp" );
                 map.put("model", finalPackageName + ".model" );
+                map.put("layoutUrl", layoutUrl);
                 this.setMap(map);
             }
         };
