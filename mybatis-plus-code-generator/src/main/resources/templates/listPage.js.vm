@@ -1,0 +1,152 @@
+layui.use(['table', 'layer', 'form', 'laytpl'], function () {
+    var table = layui.table, layer = layui.layer, form = layui.form, laytpl = layui.laytpl, $ = layui.jquery;
+    var tableReload = function () {
+        table.reload('table', {
+            page: {
+                curr: 1 //重新从第 1 页开始
+            }
+            , where: {}, url: rootPath + '/${table.entityPath}/findByPage'
+        });
+    };
+    var columns = [
+        #foreach($field in ${table.fields})
+        #if(!${field.keyFlag})##生成普通字段
+        {field: '${field.propertyName}', title: '${field.comment}', width: 120, sort: true},
+        #end
+        #end
+        #foreach($field in ${table.commonFields})##生成公共字段
+        {field: '${field.propertyName}', title: '${field.comment}', width: 160, sort: true},
+        #end
+        {fixed: 'right', title: '操作', toolbar: '#barDemo', width: 200}
+    ];
+    table.render({
+        id: "table",
+        elem: '#table',
+        url: rootPath + '/${table.entityPath}/findByPage',
+        toolbar: '#toolbarDemo', //开启头部工具栏，并为其绑定左侧模板
+        title: '${table.comment}',
+        totalRow: true,
+        cols: [columns],
+        page: true,
+        response: {
+            statusCode: 200 //重新规定成功的状态码为 200，table 组件默认为 0
+        }, parseData: function (res) { //将原始数据解析成 table 组件所规定的数据
+            return {
+                "code": res.code, //解析接口状态
+                "msg": res.msg, //解析提示文本
+                "count": res.data.total, //解析数据长度
+                "data": res.data.records //解析数据列表
+            };
+        }
+    });
+    //头工具栏事件
+    table.on('toolbar(table)', function (obj) {
+        switch (obj.event) {
+            case 'getAddData':
+                var addHtml = addDemo.innerHTML;
+                laytpl(addHtml).render({}, function (html) {
+                    addHtml = html;
+                });
+                layer.open({
+                    type: 1,
+                    area: ['500px', '600px'],
+                    title: "新增",
+                    btn: ['提交'],
+                    content: addHtml, //这里content是一个DOM，注意：最好该元素要存放在body最外层，否则可能被其它的相对元素所影响
+                    success: function (layero, index) {
+                        form.render();    // 表单渲染
+                        form.on('submit(bind)', function (data) {
+                            $.ajax({
+                                method: "post",
+                                url: rootPath + "/${table.entityPath}/add",
+                                data: JSON.stringify(data.field),
+                                success: function (result) {
+                                    layer.close(index);
+                                    if (result.success) {
+                                        tableReload();
+                                        layer.alert("添加成功");
+                                    }
+                                },
+                                dataType: "json",
+                                contentType: "application/json"
+                            });
+                        });
+                    }, yes: function (index, layero) {
+                        layero.find('.sub-bindbtn').click();    // 这一句就是点击确认按钮触发form的隐藏提交
+                    }
+                });
+                break;
+        }
+    });
+    //监听行工具事件
+    table.on('tool(table)', function (obj) {
+        var data = obj.data;
+        //console.log(obj)
+        if (obj.event === 'del') {
+            layer.confirm('真的删除行么', function (index) {
+                $.ajax({
+                    method: "delete",
+                    url: rootPath + "/${table.entityPath}/delete/" + obj.data.id,
+                    success: function (result) {
+                        if (result.success) {
+                            tableReload();
+                        }
+                    }
+                });
+                layer.close(index);
+            });
+        } else if (obj.event === 'edit') {
+            $.get(rootPath + "/${table.entityPath}/detail/" + obj.data.id, function (result) {
+                if (result.success) {
+                    var updateHtml = updateDemo.innerHTML;
+                    laytpl(updateHtml).render(result.data, function (html) {
+                        updateHtml = html;
+                    });
+                    layer.open({
+                        type: 1,
+                        area: ['500px', '600px'],
+                        title: "编辑",
+                        btn: ['提交'],
+                        content: updateHtml, //这里content是一个DOM，注意：最好该元素要存放在body最外层，否则可能被其它的相对元素所影响
+                        success: function (layero, index) {
+                            form.render();    // 表单渲染
+                            form.on('submit(bind)', function (data) {
+                                $.ajax({
+                                    method: "post",
+                                    url: rootPath + "/${table.entityPath}/update",
+                                    data: JSON.stringify(data.field),
+                                    success: function (result) {
+                                        layer.close(index);
+                                        if (result.success) {
+                                            tableReload();
+                                            layer.alert("保存成功");
+                                        }
+                                    },
+                                    dataType: "json",
+                                    contentType: "application/json"
+                                });
+                            });
+                        }, yes: function (index, layero) {
+                            layero.find('.sub-bindbtn').click();    // 这一句就是点击确认按钮触发form的隐藏提交
+                        }
+                    });
+                }
+            })
+        } else if (obj.event === 'detail') {
+            $.get(rootPath + "/${table.entityPath}/detail/" + obj.data.id, function (result) {
+                if (result.success) {
+                    var detailHtml = detailDemo.innerHTML;
+                    laytpl(detailHtml).render(result.data, function (html) {
+                        detailHtml = html;
+                    });
+                    layer.open({
+                        type: 1,
+                        area: ['500px', '600px'],
+                        title: "详情",
+                        content: detailHtml, //这里content是一个DOM，注意：最好该元素要存放在body最外层，否则可能被其它的相对元素所影响
+                    });
+                }
+            })
+        }
+    });
+});

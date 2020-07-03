@@ -211,6 +211,14 @@ public class MyBatisPlusGenerator {
                 return demo_path + File.separator + "src" + File.separator + "main" + File.separator + "resources" + File.separator + "templates" + File.separator + tableInfo.getEntityPath() + File.separator + "list.html";
             }
         });
+        //添加list页面脚本请求对象
+        foc.add(new FileOutConfig(File.separator + "templates" + File.separator + "listPage.js.vm" ) {
+            @Override
+            public String outputFile(TableInfo tableInfo) {
+                return demo_path + File.separator + "src" + File.separator + "main" + File.separator + "resources" + File.separator + "static" + File.separator + "js" + File.separator + tableInfo.getEntityPath() + File.separator + "list.js";
+            }
+        });
+
         cfg.setFileOutConfigList(foc);
         mpg.setCfg(cfg);
         // 关闭默认 xml 生成，调整生成 至 根目录
