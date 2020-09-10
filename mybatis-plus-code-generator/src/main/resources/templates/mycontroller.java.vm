@@ -1,0 +1,98 @@
+package ${package.Controller};
+
+
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import ${package.Service}.${table.serviceName};
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.bind.annotation.*;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import ${package.Entity}.${entity};
+import live.yangmh.book.model.${table.entityPath}.${entity}Add;
+import live.yangmh.book.model.${table.entityPath}.${entity}Update;
+import live.yangmh.book.model.${table.entityPath}.${entity}Page;
+import live.yangmh.book.model.${table.entityPath}.${entity}Detail;
+
+import java.util.HashMap;
+import java.util.Map;
+/**
+ * <p>
+ * 前端控制器
+ * </p>
+ *
+ * @author yangmenghen
+ * @since 2020-06-01
+ */
+@RestController
+@RequestMapping("/#if(${controllerMappingHyphenStyle})${controllerMappingHyphen}#else${table.entityPath}#end" )
+public class ${table.controllerName}{
+    @Autowired
+    private ${table.serviceName} baseService;
+    @GetMapping("findByPage")
+    public IPage<${entity}Page> findByPage(Integer page,Integer limit,String search,${entity}Page ${table.entityPath}Page){
+        Wrapper<${entity}Page> wrapper = new QueryWrapper();
+        if(${table.entityPath}Page!=null){
+            wrapper = new QueryWrapper(${table.entityPath}Page);
+        }
+        return baseService.selectPage(page,limit,wrapper);
+    }
+    @GetMapping("detail/{id}")
+    public ${entity}Detail detail(@PathVariable String id){
+        return baseService.selectDetailById(id);
+    }
+    @PostMapping("add")
+    public Boolean add(@RequestBody ${entity}Add add){
+        ${entity} entity = new ${entity}();
+        #foreach($field in ${table.fields})
+            #if(${field.propertyType.equals("boolean")})
+                #set($getprefix="is")
+            #else
+                #set($getprefix="get")
+            #end
+            #if(!${field.keyFlag})
+        entity.set${field.capitalName}(add.${getprefix}${field.capitalName}());
+            #end
+        #end
+        return baseService.saveOrUpdate(entity);
+    }
+    @PostMapping("update")
+    public Boolean update(@RequestBody ${entity}Update update){
+        ${entity} entity = new ${entity}();
+        #foreach($field in ${table.fields})
+            #if(${field.propertyType.equals("boolean")})
+                #set($getprefix="is")
+            #else
+                #set($getprefix="get")
+            #end
+        entity.set${field.capitalName}(update.${getprefix}${field.capitalName}());
+        #end
+        return baseService.saveOrUpdate(entity);
+    }
+    @DeleteMapping("delete/{id}")
+    public Boolean delete(@PathVariable String id){
+        baseService.removeById(id);
+        return true;
+    }
+    @GetMapping("listPage")
+    public ModelAndView listPage(){
+        return new ModelAndView("${table.entityPath}/list");
+    }
+    @GetMapping("addPage")
+    public ModelAndView addPage(){
+        return new ModelAndView("${table.entityPath}/add");
+    }
+    @GetMapping("updatePage/{id}")
+    public ModelAndView updatePage(@PathVariable String id){
+        Map<String,Object> map = new HashMap();
+        map.put("id",id);
+        return new ModelAndView("${table.entityPath}/update",map);
+    }
+    @GetMapping("detailPage/{id}")
+    public ModelAndView detailPage(@PathVariable String id){
+        Map<String,Object> map = new HashMap();
+        map.put("id",id);
+        return new ModelAndView("${table.entityPath}/detail",map);
+    }
+}
+

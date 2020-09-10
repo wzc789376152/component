@@ -13,6 +13,7 @@
         <module>filespringmvc</module>
         <module>ftpfilemanager</module>
         <module>shiro-springboot-starter</module>
+        <module>mybatis-plus-code-generator</module>
     </modules>
     <packaging>pom</packaging>
     <parent>
