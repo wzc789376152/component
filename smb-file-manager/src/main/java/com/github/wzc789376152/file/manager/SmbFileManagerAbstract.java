@@ -45,7 +45,7 @@ public abstract class SmbFileManagerAbstract implements IFileManager {
         if (url.endsWith("/")) {
             url = url.substring(0, url.length() - 1);
         }
-        url += "/" + fileProperties.getProject() + "/" + fileProperties.getWorkDir();
+        url += "/" + fileProperties.getProject() + "/" + fileProperties.getWorkDir()+"/";
         try {
             SmbFile smbFile = new SmbFile(url);
             if (!smbFile.exists()) {
@@ -154,6 +154,6 @@ public abstract class SmbFileManagerAbstract implements IFileManager {
         if (url.endsWith("/")) {
             url = url.substring(0, url.length() - 1);
         }
-        url += "/" + fileProperties.getProject() + "/" + fileProperties.getWorkDir() + "/" + s;
+        url += "/" + fileProperties.getProject() + "/" + fileProperties.getWorkDir() + "/" + s+"/";
     }
 }
