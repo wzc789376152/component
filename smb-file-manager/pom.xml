@@ -32,7 +32,7 @@
     <description>
         smb文件管理器
     </description>
-    <url>https://github.com/wzc789376152/component/tree/master/smbfilemanager</url>
+    <url>https://github.com/wzc789376152/component/tree/master/smb-file-manager</url>
     <properties>
         <project.release.version>1.0.0-SNAPSHOT</project.release.version>
     </properties>
