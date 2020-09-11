@@ -23,6 +23,9 @@ public abstract class SmbFileManagerAbstract implements IFileManager {
     private FileProperties fileProperties;
 
     public abstract SmbProperties getSmbProperties();
+    public void setSmbProperties(SmbProperties smbProperties){
+        this.smbProperties = smbProperties;
+    }
 
     public void init(FileProperties fileProperties) {
         logger.info("use ftpFileManager");

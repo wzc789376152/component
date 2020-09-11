@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <import resource="classpath:spring-file.xml"></import>
+    <bean id="smbProperties" class="com.github.wzc789376152.file.SmbProperties">
+        <property name="url" value="${cqfile.smb.url}"></property>
+        <property name="username" value="${cqfile.smb.username}"></property>
+        <property name="password" value="${cqfile.smb.password}"></property>
+    </bean>
+    <bean id="fileManager" class="com.github.wzc789376152.file.manager.SmbFileManager">
+        <property name="smbProperties" ref="smbProperties"></property>
+    </bean>
+</beans>

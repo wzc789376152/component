@@ -8,9 +8,9 @@ spring:
       enable: false
     smb:
       enable: true
-      url: 10.10.10.181
-      username: weizc
-      password: 789376152
+      url: 10.10.10.103
+#      username: weizc
+#      password: 789376152
   servlet:
     multipart:
       max-file-size: 10GB
