@@ -15,7 +15,7 @@
         <profile>
             <id>product</id>
             <properties>
-                <project.release.version>1.1.0</project.release.version>
+                <project.release.version>1.1.1</project.release.version>
             </properties>
         </profile>
     </profiles>
