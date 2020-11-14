@@ -63,6 +63,7 @@ public class ShiroRedisConfiguration {
         redisManager.setHost(redisProperties.getHost() + ":" + redisProperties.getPort());
         redisManager.setPassword(redisProperties.getPassword());
         redisManager.setDatabase(redisProperties.getDatabase());
+        redisManager.setTimeout(redisProperties.getTimeout().getNano());
         return redisManager;
     }
 }
