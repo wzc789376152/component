@@ -53,12 +53,13 @@ public class ShiroRedisConfiguration {
      *
      * @return
      */
+    @Bean
     public RedisManager redisManager() {
         RedisManager redisManager = new RedisManager();
         redisManager.setHost(redisProperties.getHost() + ":" + redisProperties.getPort());
         redisManager.setPassword(redisProperties.getPassword());
         redisManager.setDatabase(redisProperties.getDatabase());
-        redisManager.setTimeout(redisProperties.getTimeout() == null ? 1000 : redisProperties.getTimeout().getNano());
+        redisManager.setTimeout(redisProperties.getTimeout() == null ? 1000 : (int) redisProperties.getTimeout().getSeconds());
         return redisManager;
     }
 }

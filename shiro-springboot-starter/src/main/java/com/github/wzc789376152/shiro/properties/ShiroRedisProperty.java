@@ -4,7 +4,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "spring.shiro.redis")
 public class ShiroRedisProperty {
-    private Boolean enable;
+    private Boolean enable = false;
     private Integer timeout;
 
     public Boolean getEnable() {

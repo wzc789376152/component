@@ -41,6 +41,8 @@ public class ShiroProperty {
      */
     private Integer maxAge = -1;
 
+    private Boolean enableSession = true;
+
     public String getSuccessUrl() {
         return successUrl;
     }
@@ -104,5 +106,13 @@ public class ShiroProperty {
 
     public void setMaxAge(Integer maxAge) {
         this.maxAge = maxAge;
+    }
+
+    public Boolean getEnableSession() {
+        return enableSession;
+    }
+
+    public void setEnableSession(Boolean enableSession) {
+        this.enableSession = enableSession;
     }
 }

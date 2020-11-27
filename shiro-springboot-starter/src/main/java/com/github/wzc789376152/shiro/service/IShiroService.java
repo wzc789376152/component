@@ -2,14 +2,14 @@ package com.github.wzc789376152.shiro.service;
 
 import java.util.List;
 
-public interface IShiroService {
-    Object findUserInfoByUsername(String username);
+public interface IShiroService<T extends Object> {
+    T findUserInfoByUsername(String username);
 
     String findPasswordByUsername(String username);
 
     String findSaltByUsername(String username);
 
-    List<String> findRolesByUsername(String username);
+    List<String> findRolesByObject(T object);
 
-    List<String> findPermissionsByUsername(String username);
+    List<String> findPermissionsByObject(T object);
 }

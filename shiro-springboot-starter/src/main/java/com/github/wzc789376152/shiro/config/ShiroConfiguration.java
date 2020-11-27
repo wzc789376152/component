@@ -1,11 +1,21 @@
 package com.github.wzc789376152.shiro.config;
 
+import com.github.wzc789376152.shiro.filter.JwtFilter;
+import com.github.wzc789376152.shiro.properties.ShiroJwtProperty;
 import com.github.wzc789376152.shiro.properties.ShiroProperty;
 import com.github.wzc789376152.shiro.properties.ShiroUrlPer;
+import com.github.wzc789376152.shiro.realm.ShiroJwtRealm;
+import com.github.wzc789376152.shiro.realm.ShiroPasswordRealm;
+import com.github.wzc789376152.shiro.realm.UserModularRealmAuthenticator;
+import org.apache.shiro.authc.UsernamePasswordToken;
 import org.apache.shiro.authc.credential.HashedCredentialsMatcher;
+import org.apache.shiro.authc.pam.AtLeastOneSuccessfulStrategy;
 import org.apache.shiro.cache.CacheManager;
 import org.apache.shiro.cache.ehcache.EhCacheManager;
 import org.apache.shiro.codec.Base64;
+import org.apache.shiro.mgt.DefaultSessionStorageEvaluator;
+import org.apache.shiro.mgt.DefaultSubjectDAO;
+import org.apache.shiro.realm.Realm;
 import org.apache.shiro.session.mgt.eis.SessionDAO;
 import org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor;
 import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
@@ -15,11 +25,16 @@ import org.apache.shiro.web.servlet.SimpleCookie;
 import org.apache.shiro.web.session.mgt.DefaultWebSessionManager;
 import org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.apache.shiro.mgt.SecurityManager;
+
+import javax.servlet.Filter;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -32,13 +47,17 @@ public class ShiroConfiguration {
     @Autowired
     private ShiroProperty shiroProperty;
     @Autowired(required = false)
+    private ShiroJwtProperty shiroJwtProperty;
+    @Autowired(required = false)
     private CacheManager cacheManager;
     @Autowired(required = false)
     private SessionDAO sessionDAO;
+    @Autowired(required = false)
+    private ShiroJwtRealm shiroJwtRealm;
 
-    @Bean
-    public ShiroRealm shiroRealm() {
-        ShiroRealm realm = new ShiroRealm();
+    @Bean("passwordRealm")
+    public ShiroPasswordRealm shiroRealm() {
+        ShiroPasswordRealm realm = new ShiroPasswordRealm();
         HashedCredentialsMatcher hashedCredentialsMatcher = hashedCredentialsMatcher();
         if (hashedCredentialsMatcher != null) {
             realm.setCredentialsMatcher(hashedCredentialsMatcher);
@@ -55,16 +74,39 @@ public class ShiroConfiguration {
         return hashedCredentialsMatcher;
     }
 
+    @Bean
+    public UserModularRealmAuthenticator userModularRealmAuthenticator() {
+        // 自己重写的ModularRealmAuthenticator
+        UserModularRealmAuthenticator modularRealmAuthenticator = new UserModularRealmAuthenticator();
+        modularRealmAuthenticator.setAuthenticationStrategy(new AtLeastOneSuccessfulStrategy());
+        return modularRealmAuthenticator;
+    }
+
     @Bean(name = "securityManager")
-    public DefaultWebSecurityManager securityManager() {
+    public DefaultWebSecurityManager securityManager(@Qualifier("userModularRealmAuthenticator") UserModularRealmAuthenticator userModularRealmAuthenticator) {
         DefaultWebSecurityManager securityManager = new DefaultWebSecurityManager();
-        securityManager.setRealm(shiroRealm());
-        if (cacheManager == null) {
-            cacheManager = ehCacheManager();
+        securityManager.setAuthenticator(userModularRealmAuthenticator);
+        List<Realm> realms = new ArrayList<>();
+        // 添加多个realm
+        realms.add(shiroRealm());
+        if (shiroJwtRealm != null) {
+            realms.add(shiroJwtRealm);
         }
-        securityManager.setCacheManager(cacheManager);
-        securityManager.setRememberMeManager(rememberMeManager());
-        securityManager.setSessionManager(sessionManager());
+        securityManager.setRealms(realms);
+        if (shiroProperty.getEnableSession()) {
+            if (cacheManager == null) {
+                cacheManager = ehCacheManager();
+            }
+            securityManager.setCacheManager(cacheManager);
+            securityManager.setRememberMeManager(rememberMeManager());
+            securityManager.setSessionManager(sessionManager());
+        } else {
+            DefaultSubjectDAO subjectDAO = new DefaultSubjectDAO();
+            DefaultSessionStorageEvaluator defaultSessionStorageEvaluator = new DefaultSessionStorageEvaluator();
+            defaultSessionStorageEvaluator.setSessionStorageEnabled(false);
+            subjectDAO.setSessionStorageEvaluator(defaultSessionStorageEvaluator);
+            securityManager.setSubjectDAO(subjectDAO);
+        }
         return securityManager;
     }
 
@@ -131,12 +173,20 @@ public class ShiroConfiguration {
                 filterChainDefinitionManager.put(shiroUrlPer.getUrl(), shiroUrlPer.getPer());
             }
         }
+        Map<String, Filter> filter = new LinkedHashMap<>(1);
+        if(shiroJwtProperty!=null && shiroJwtProperty.getEnable()) {
+            filter.put("jwt", new JwtFilter(shiroJwtProperty));
+            filterChainDefinitionManager.put("/**", "jwt");
+        }
+        shiroFilterFactoryBean.setFilters(filter);
         shiroFilterFactoryBean.setFilterChainDefinitionMap(filterChainDefinitionManager);
         shiroFilterFactoryBean.setSuccessUrl(shiroProperty.getSuccessUrl());
         shiroFilterFactoryBean.setUnauthorizedUrl(shiroProperty.getUnauthorizedUrl());
         shiroFilterFactoryBean.setLoginUrl(shiroProperty.getLoginUrl());
+
         return shiroFilterFactoryBean;
     }
+
     @Bean
     public DefaultAdvisorAutoProxyCreator defaultAdvisorAutoProxyCreator() {
         DefaultAdvisorAutoProxyCreator proxyCreator = new DefaultAdvisorAutoProxyCreator();

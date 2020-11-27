@@ -1,4 +1,4 @@
-package com.github.wzc789376152.shiro.config;
+package com.github.wzc789376152.shiro.realm;
 
 import com.github.wzc789376152.shiro.service.IShiroService;
 import org.apache.shiro.SecurityUtils;
@@ -12,13 +12,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class ShiroRealm extends AuthorizingRealm {
+public class ShiroPasswordRealm extends AuthorizingRealm {
 
-    private Logger logger = LoggerFactory.getLogger(ShiroRealm.class);
+    private Logger logger = LoggerFactory.getLogger(ShiroPasswordRealm.class);
 
     @Autowired
     private IShiroService shiroService;
-
+    @Override
+    public boolean supports(AuthenticationToken token) {
+        return token instanceof UsernamePasswordToken;
+    }
     /**
      * 登录认证
      *
@@ -31,7 +34,7 @@ public class ShiroRealm extends AuthorizingRealm {
             throws AuthenticationException {
         UsernamePasswordToken token = (UsernamePasswordToken) authenticationToken;
         // 若存在，将此用户存放到登录认证info中，无需自己做密码对比，Shiro会为我们进行密码对比校验
-        return new SimpleAuthenticationInfo(shiroService.findUserInfoByUsername(token.getUsername()), shiroService.findPasswordByUsername(token.getUsername()), ByteSource.Util.bytes(shiroService.findSaltByUsername(token.getUsername())), getName());
+        return new SimpleAuthenticationInfo(shiroService.findUserInfoByUsername(token.getUsername()), shiroService.findPasswordByUsername(token.getUsername()), ByteSource.Util.bytes(shiroService.findSaltByUsername(token.getUsername())), "Password");
     }
 
     /**
@@ -43,8 +46,8 @@ public class ShiroRealm extends AuthorizingRealm {
     @Override
     protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principalCollection) {
         SimpleAuthorizationInfo info = new SimpleAuthorizationInfo();
-        info.addRoles(shiroService.findRolesByUsername(principalCollection.getPrimaryPrincipal().toString()));
-        info.addStringPermissions(shiroService.findPermissionsByUsername(principalCollection.getPrimaryPrincipal().toString()));
+        info.addRoles(shiroService.findRolesByObject(principalCollection.getPrimaryPrincipal()));
+        info.addStringPermissions(shiroService.findPermissionsByObject(principalCollection.getPrimaryPrincipal()));
         return info;
     }
 
