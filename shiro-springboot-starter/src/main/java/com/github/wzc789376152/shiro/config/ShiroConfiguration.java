@@ -31,6 +31,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.apache.shiro.mgt.SecurityManager;
 
+import javax.annotation.Resource;
 import javax.servlet.Filter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -48,7 +49,7 @@ public class ShiroConfiguration {
     private ShiroProperty shiroProperty;
     @Autowired(required = false)
     private ShiroJwtProperty shiroJwtProperty;
-    @Autowired(required = false)
+    @Resource(name = "shiroRedisCacheManager")
     private CacheManager cacheManager;
     @Autowired(required = false)
     private SessionDAO sessionDAO;
@@ -174,7 +175,7 @@ public class ShiroConfiguration {
             }
         }
         Map<String, Filter> filter = new LinkedHashMap<>(1);
-        if(shiroJwtProperty!=null && shiroJwtProperty.getEnable()) {
+        if (shiroJwtProperty != null && shiroJwtProperty.getEnable()) {
             filter.put("jwt", new JwtFilter(shiroJwtProperty));
             filterChainDefinitionManager.put("/**", "jwt");
         }

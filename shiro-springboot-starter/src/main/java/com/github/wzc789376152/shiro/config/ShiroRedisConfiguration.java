@@ -27,7 +27,7 @@ public class ShiroRedisConfiguration {
      *
      * @return
      */
-    @Bean
+    @Bean("shiroRedisCacheManager")
     public CacheManager cacheManager() {
         RedisCacheManager redisCacheManager = new RedisCacheManager();
         redisCacheManager.setRedisManager(redisManager());
