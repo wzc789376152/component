@@ -1,5 +1,6 @@
 package com.github.wzc789376152.shiro.config;
 
+import com.github.wzc789376152.shiro.exception.GlobalExceptionResolver;
 import com.github.wzc789376152.shiro.filter.JwtFilter;
 import com.github.wzc789376152.shiro.properties.ShiroJwtProperty;
 import com.github.wzc789376152.shiro.properties.ShiroProperty;
@@ -30,6 +31,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.apache.shiro.mgt.SecurityManager;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import javax.annotation.Resource;
 import javax.servlet.Filter;
@@ -86,11 +88,11 @@ public class ShiroConfiguration {
     @Bean(name = "securityManager")
     public DefaultWebSecurityManager securityManager(@Qualifier("userModularRealmAuthenticator") UserModularRealmAuthenticator userModularRealmAuthenticator) {
         DefaultWebSecurityManager securityManager = new DefaultWebSecurityManager();
-        securityManager.setAuthenticator(userModularRealmAuthenticator);
         List<Realm> realms = new ArrayList<>();
         // 添加多个realm
         realms.add(shiroRealm());
         if (shiroJwtRealm != null) {
+            securityManager.setAuthenticator(userModularRealmAuthenticator);
             realms.add(shiroJwtRealm);
         }
         securityManager.setRealms(realms);
@@ -201,6 +203,11 @@ public class ShiroConfiguration {
         AuthorizationAttributeSourceAdvisor authorizationAttributeSourceAdvisor = new AuthorizationAttributeSourceAdvisor();
         authorizationAttributeSourceAdvisor.setSecurityManager(securityManager);
         return authorizationAttributeSourceAdvisor;
+    }
+
+    @Bean(name = "exceptionHandler")
+    public HandlerExceptionResolver handlerExceptionResolver() {
+        return new GlobalExceptionResolver();
     }
 
     public EhCacheManager ehCacheManager() {

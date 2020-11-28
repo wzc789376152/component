@@ -32,9 +32,9 @@ public class ShiroJwtRealm extends AuthorizingRealm {
     protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principals) {
         SimpleAuthorizationInfo authorizationInfo = new SimpleAuthorizationInfo();
         // 添加角色
-        authorizationInfo.addRoles(shiroService.findRolesByObject(principals.getPrimaryPrincipal()));
+        authorizationInfo.addRoles(shiroService.findRolesByObject((UserInfo) principals.getPrimaryPrincipal()));
         // 添加权限
-        authorizationInfo.addStringPermissions(shiroService.findPermissionsByObject(principals.getPrimaryPrincipal()));
+        authorizationInfo.addStringPermissions(shiroService.findPermissionsByObject((UserInfo) principals.getPrimaryPrincipal()));
         return authorizationInfo;
     }
 
