@@ -119,16 +119,15 @@ public class ShiroConfiguration {
         ShiroFilterFactoryBean shiroFilterFactoryBean = new ShiroFilterFactoryBean();
         shiroFilterFactoryBean.setSecurityManager(securityManager);
         Map<String, String> filterChainDefinitionManager = new LinkedHashMap<String, String>();
+        Map<String, Filter> filter = new LinkedHashMap<>(1);
+        if (shiroJwtProperty != null && shiroJwtProperty.getEnable()) {
+            filter.put("jwt", new JwtFilter(shiroJwtProperty));
+        }
         if (shiroProperty.getUrlPers() != null && shiroProperty.getUrlPers().size() > 0) {
             for (int i = 0; i < shiroProperty.getUrlPers().size(); i++) {
                 ShiroUrlPer shiroUrlPer = shiroProperty.getUrlPers().get(i);
                 filterChainDefinitionManager.put(shiroUrlPer.getUrl(), shiroUrlPer.getPer());
             }
-        }
-        Map<String, Filter> filter = new LinkedHashMap<>(1);
-        if (shiroJwtProperty != null && shiroJwtProperty.getEnable()) {
-            filter.put("jwt", new JwtFilter(shiroJwtProperty));
-            filterChainDefinitionManager.put("/**", "jwt");
         }
         shiroFilterFactoryBean.setFilters(filter);
         shiroFilterFactoryBean.setFilterChainDefinitionMap(filterChainDefinitionManager);
