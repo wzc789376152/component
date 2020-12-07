@@ -11,11 +11,9 @@ import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.subject.PrincipalCollection;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.annotation.Resource;
-
 
 public class ShiroJwtRealm extends AuthorizingRealm {
-    @Resource
+    @Autowired
     private IJwtService jwtService;
     @Autowired
     private IShiroService shiroService;

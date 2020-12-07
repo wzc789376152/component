@@ -9,13 +9,13 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <properties>
-        <project.release.version>1.2.3-SNAPSHOT</project.release.version>
+        <project.release.version>1.3.0-SNAPSHOT</project.release.version>
     </properties>
     <profiles>
         <profile>
             <id>product</id>
             <properties>
-                <project.release.version>1.2.3</project.release.version>
+                <project.release.version>1.3.0</project.release.version>
             </properties>
         </profile>
     </profiles>
@@ -83,6 +83,12 @@
             <groupId>org.crazycake</groupId>
             <artifactId>shiro-redis</artifactId>
             <version>3.2.3</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <version>2.9.0</version>
             <scope>provided</scope>
         </dependency>
         <!--JWT-->

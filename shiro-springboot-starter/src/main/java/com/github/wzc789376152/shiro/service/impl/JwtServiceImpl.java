@@ -10,15 +10,10 @@ import com.github.wzc789376152.shiro.properties.ShiroJwtProperty;
 import com.github.wzc789376152.shiro.service.IJwtService;
 import org.crazycake.shiro.RedisManager;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
 
 import java.util.Date;
+import java.util.Set;
 
-@Configuration
-@ConditionalOnProperty(prefix = "spring.shiro.jwt", name = "enable", havingValue = "true")
-@EnableConfigurationProperties(ShiroJwtProperty.class)
 public class JwtServiceImpl implements IJwtService {
     @Autowired
     private ShiroJwtProperty shiroJwtProperty;
@@ -26,21 +21,26 @@ public class JwtServiceImpl implements IJwtService {
     private RedisManager redisManager;
     private String prefix = "shiro:jwt:";
 
+    @Override
     public String createToken(String username, String secret) {
+        if(!shiroJwtProperty.getMultipleLogin()){
+            multipleLoginOut(username);
+        }
         Date start = new Date();
         Date end = new Date(System.currentTimeMillis() + shiroJwtProperty.getTimeout());
         Algorithm algorithm = Algorithm.HMAC256(secret);
         String token = JWT.create().withClaim("username", username).withIssuedAt(start).withExpiresAt(end).sign(algorithm);
         if (redisManager != null) {
-            redisManager.set((prefix+token).getBytes(), username.getBytes(), redisManager.getTimeout());
+            redisManager.set((prefix + token).getBytes(), username.getBytes(), redisManager.getTimeout());
         }
         return token;
     }
 
+    @Override
     public Boolean verify(String token, String username, String secret) {
         try {
             if (redisManager != null) {
-                byte[] value = redisManager.get((prefix+token).getBytes());
+                byte[] value = redisManager.get((prefix + token).getBytes());
                 if (value == null) {
                     // 根据密码生成JWT效验器
                     return false;
@@ -59,15 +59,16 @@ public class JwtServiceImpl implements IJwtService {
     @Override
     public Boolean cancel(String token) {
         if (redisManager != null) {
-            redisManager.del((prefix+token).getBytes());
+            redisManager.del((prefix + token).getBytes());
         }
         return true;
     }
 
+    @Override
     public String getUserName(String token) {
         try {
             if (redisManager != null) {
-                byte[] result = redisManager.get((prefix+token).getBytes());
+                byte[] result = redisManager.get((prefix + token).getBytes());
                 if (result == null) {
                     return null;
                 }
@@ -77,5 +78,19 @@ public class JwtServiceImpl implements IJwtService {
         } catch (JWTDecodeException e) {
             return null;
         }
+    }
+
+    private Boolean multipleLoginOut(String username) {
+        if (redisManager != null) {
+            Set<byte[]> keys = redisManager.keys((prefix+"*").getBytes());
+            for (byte[] key : keys) {
+                byte[] valueByte = redisManager.get(key);
+                String value = new String(valueByte);
+                if (username.equals(value)) {
+                    redisManager.del(key);
+                }
+            }
+        }
+        return true;
     }
 }

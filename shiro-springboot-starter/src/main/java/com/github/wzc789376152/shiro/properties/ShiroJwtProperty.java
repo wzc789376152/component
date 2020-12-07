@@ -7,6 +7,7 @@ public class ShiroJwtProperty {
     private Boolean enable = false;
     private String header;
     private Integer timeout;
+    private Boolean multipleLogin = false;
 
     public String getHeader() {
         return header;
@@ -30,5 +31,13 @@ public class ShiroJwtProperty {
 
     public void setEnable(Boolean enable) {
         this.enable = enable;
+    }
+
+    public Boolean getMultipleLogin() {
+        return multipleLogin;
+    }
+
+    public void setMultipleLogin(Boolean multipleLogin) {
+        this.multipleLogin = multipleLogin;
     }
 }

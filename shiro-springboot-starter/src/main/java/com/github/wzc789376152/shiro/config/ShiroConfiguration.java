@@ -6,6 +6,7 @@ import com.github.wzc789376152.shiro.properties.ShiroJwtProperty;
 import com.github.wzc789376152.shiro.properties.ShiroProperty;
 import com.github.wzc789376152.shiro.properties.ShiroSessionProperty;
 import com.github.wzc789376152.shiro.properties.ShiroUrlPer;
+import com.github.wzc789376152.shiro.realm.ShiroCodeRealm;
 import com.github.wzc789376152.shiro.realm.ShiroJwtRealm;
 import com.github.wzc789376152.shiro.realm.ShiroPasswordRealm;
 import com.github.wzc789376152.shiro.realm.UserModularRealmAuthenticator;
@@ -58,6 +59,8 @@ public class ShiroConfiguration {
     private CacheManager cacheManager;
     @Autowired(required = false)
     private ShiroJwtRealm shiroJwtRealm;
+    @Autowired(required = false)
+    private ShiroCodeRealm shiroCodeRealm;
 
     @Bean("passwordRealm")
     public ShiroPasswordRealm shiroRealm() {
@@ -91,11 +94,14 @@ public class ShiroConfiguration {
         DefaultWebSecurityManager securityManager = new DefaultWebSecurityManager();
         List<Realm> realms = new ArrayList<>();
         // 添加多个realm
-        realms.add(shiroRealm());
         if (shiroJwtRealm != null) {
             securityManager.setAuthenticator(userModularRealmAuthenticator);
             realms.add(shiroJwtRealm);
         }
+        if(shiroCodeRealm!=null){
+            realms.add(shiroCodeRealm);
+        }
+        realms.add(shiroRealm());
         securityManager.setRealms(realms);
         if (shiroSessionProperty.getEnable()) {
             if (cacheManager == null) {
