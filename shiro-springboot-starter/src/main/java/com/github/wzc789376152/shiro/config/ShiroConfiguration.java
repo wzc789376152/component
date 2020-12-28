@@ -127,7 +127,7 @@ public class ShiroConfiguration {
         Map<String, String> filterChainDefinitionManager = new LinkedHashMap<String, String>();
         Map<String, Filter> filter = new LinkedHashMap<>(1);
         if (shiroJwtProperty != null && shiroJwtProperty.getEnable()) {
-            filter.put("jwt", new JwtFilter(shiroJwtProperty));
+            filter.put("jwt", new JwtFilter(shiroJwtProperty,shiroProperty));
         }
         if (shiroProperty.getUrlPers() != null && shiroProperty.getUrlPers().size() > 0) {
             for (int i = 0; i < shiroProperty.getUrlPers().size(); i++) {

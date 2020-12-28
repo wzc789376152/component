@@ -1,6 +1,7 @@
 package com.github.wzc789376152.shiro.filter;
 
 import com.github.wzc789376152.shiro.properties.ShiroJwtProperty;
+import com.github.wzc789376152.shiro.properties.ShiroProperty;
 import com.github.wzc789376152.shiro.token.JwtToken;
 import org.apache.shiro.authc.IncorrectCredentialsException;
 import org.apache.shiro.web.filter.authc.BasicHttpAuthenticationFilter;
@@ -9,14 +10,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 
 public class JwtFilter extends BasicHttpAuthenticationFilter {
     ShiroJwtProperty shiroJwtProperty;
+    ShiroProperty shiroProperty;
 
-    public JwtFilter(ShiroJwtProperty shiroJwtProperty) {
+    public JwtFilter(ShiroJwtProperty shiroJwtProperty, ShiroProperty shiroProperty) {
         this.shiroJwtProperty = shiroJwtProperty;
+        this.shiroProperty = shiroProperty;
     }
 
     /**
@@ -34,11 +38,12 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
             return executeLogin(request, response);
         }
         try {
-            response.getWriter().println("用户未登录");
+            ((HttpServletResponse) response).sendRedirect(shiroProperty.getLoginUrl());
         } catch (IOException e) {
             e.printStackTrace();
+            return false;
         }
-        return false;
+        return true;
     }
 
     /**
@@ -54,7 +59,7 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
             getSubject(request, response).login(jwtToken);
         } catch (IncorrectCredentialsException e) {
             try {
-                response.getWriter().println("用户已过期！");
+                ((HttpServletResponse) response).sendRedirect(shiroProperty.getLoginUrl());
             } catch (IOException ioException) {
                 ioException.printStackTrace();
             }
