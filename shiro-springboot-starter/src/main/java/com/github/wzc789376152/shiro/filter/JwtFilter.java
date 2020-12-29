@@ -5,13 +5,13 @@ import com.github.wzc789376152.shiro.properties.ShiroProperty;
 import com.github.wzc789376152.shiro.token.JwtToken;
 import org.apache.shiro.authc.IncorrectCredentialsException;
 import org.apache.shiro.web.filter.authc.BasicHttpAuthenticationFilter;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.OutputStream;
 
 
 public class JwtFilter extends BasicHttpAuthenticationFilter {
@@ -37,13 +37,8 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
         if (token != null) {
             return executeLogin(request, response);
         }
-        try {
-            ((HttpServletResponse) response).sendRedirect(shiroProperty.getLoginUrl());
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        }
-        return true;
+        responseError(response, "用户未登录");
+        return false;
     }
 
     /**
@@ -58,11 +53,7 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
         try {
             getSubject(request, response).login(jwtToken);
         } catch (IncorrectCredentialsException e) {
-            try {
-                ((HttpServletResponse) response).sendRedirect(shiroProperty.getLoginUrl());
-            } catch (IOException ioException) {
-                ioException.printStackTrace();
-            }
+            responseError(response, "用户未登录");
             return false;
         }
         // 如果没有抛出异常则代表登入成功，返回true
@@ -76,4 +67,31 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
     protected boolean preHandle(ServletRequest request, ServletResponse response) throws Exception {
         return super.preHandle(request, response);
     }
+
+    /**
+     * 请求异常则需要重新登录
+     */
+    private void responseError(ServletResponse response, String message) {
+        response.setCharacterEncoding("UTF-8");
+        response.setContentType("application/json; charset=utf-8");
+        ((HttpServletResponse)response).setStatus(401);
+        OutputStream out = null;
+        try {
+            out = response.getOutputStream();
+            out.write(message.getBytes());
+            out.flush();
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (out != null) {
+                    out.close();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
 }
