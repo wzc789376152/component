@@ -8,6 +8,7 @@ import org.apache.shiro.web.filter.authc.BasicHttpAuthenticationFilter;
 
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -34,6 +35,14 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
     @Override
     protected boolean isAccessAllowed(ServletRequest request, ServletResponse response, Object mappedValue) {
         String token = ((HttpServletRequest) request).getHeader(shiroJwtProperty.getHeader());
+        if (token == null) {
+            for (Cookie cookie :  ((HttpServletRequest) request).getCookies()) {
+                if (cookie.getName().equals(shiroJwtProperty.getHeader())) {
+                    token = cookie.getValue();
+                    break;
+                }
+            }
+        }
         if (token != null) {
             return executeLogin(request, response);
         }
@@ -48,6 +57,14 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
     protected boolean executeLogin(ServletRequest request, ServletResponse response) {
         HttpServletRequest httpServletRequest = (HttpServletRequest) request;
         String token = httpServletRequest.getHeader(shiroJwtProperty.getHeader());
+        if (token == null) {
+            for (Cookie cookie : httpServletRequest.getCookies()) {
+                if (cookie.getName().equals(shiroJwtProperty.getHeader())) {
+                    token = cookie.getValue();
+                    break;
+                }
+            }
+        }
         JwtToken jwtToken = new JwtToken(token);
         // 提交给realm进行登入，如果错误他会抛出异常并被捕获
         try {
@@ -74,7 +91,7 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
     private void responseError(ServletResponse response, String message) {
         response.setCharacterEncoding("UTF-8");
         response.setContentType("application/json; charset=utf-8");
-        ((HttpServletResponse)response).setStatus(401);
+        ((HttpServletResponse) response).setStatus(401);
         OutputStream out = null;
         try {
             out = response.getOutputStream();
