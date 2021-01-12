@@ -6,7 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class ShiroJwtProperty {
     private Boolean enable = false;
     private String header;
-    private Integer timeout;
+    private Long timeout;
     private Boolean multipleLogin = false;
 
     public String getHeader() {
@@ -17,11 +17,11 @@ public class ShiroJwtProperty {
         this.header = header;
     }
 
-    public Integer getTimeout() {
+    public Long getTimeout() {
         return timeout;
     }
 
-    public void setTimeout(Integer timeout) {
+    public void setTimeout(Long timeout) {
         this.timeout = timeout;
     }
 
