@@ -36,10 +36,13 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
     protected boolean isAccessAllowed(ServletRequest request, ServletResponse response, Object mappedValue) {
         String token = ((HttpServletRequest) request).getHeader(shiroJwtProperty.getHeader());
         if (token == null) {
-            for (Cookie cookie :  ((HttpServletRequest) request).getCookies()) {
-                if (cookie.getName().equals(shiroJwtProperty.getHeader())) {
-                    token = cookie.getValue();
-                    break;
+            Cookie[] cookies = ((HttpServletRequest) request).getCookies();
+            if (cookies != null) {
+                for (Cookie cookie : cookies) {
+                    if (cookie.getName().equals(shiroJwtProperty.getHeader())) {
+                        token = cookie.getValue();
+                        break;
+                    }
                 }
             }
         }
@@ -58,10 +61,13 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
         HttpServletRequest httpServletRequest = (HttpServletRequest) request;
         String token = httpServletRequest.getHeader(shiroJwtProperty.getHeader());
         if (token == null) {
-            for (Cookie cookie : httpServletRequest.getCookies()) {
-                if (cookie.getName().equals(shiroJwtProperty.getHeader())) {
-                    token = cookie.getValue();
-                    break;
+            Cookie[] cookies = ((HttpServletRequest) request).getCookies();
+            if (cookies != null) {
+                for (Cookie cookie : cookies) {
+                    if (cookie.getName().equals(shiroJwtProperty.getHeader())) {
+                        token = cookie.getValue();
+                        break;
+                    }
                 }
             }
         }

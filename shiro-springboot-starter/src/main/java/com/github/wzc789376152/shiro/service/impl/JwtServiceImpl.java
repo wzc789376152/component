@@ -50,6 +50,9 @@ public class JwtServiceImpl implements IJwtService {
             JWTVerifier verifier = JWT.require(algorithm).withClaim("username", username).build();
             // 效验TOKEN
             verifier.verify(token);
+            if (redisManager != null) {
+                redisManager.set((prefix + token).getBytes(), username.getBytes(), redisManager.getTimeout());
+            }
             return true;
         } catch (JWTVerificationException exception) {
             return false;
