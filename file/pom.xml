@@ -8,7 +8,6 @@
         <artifactId>parent</artifactId>
         <version>1.1.0</version>
     </parent>
-    <groupId>com.github.wzc789376152</groupId>
     <artifactId>file</artifactId>
     <version>${project.release.version}</version>
     <packaging>jar</packaging>
@@ -17,13 +16,13 @@
     </description>
     <url>https://github.com/wzc789376152/component/tree/master/file</url>
     <properties>
-        <project.release.version>1.4.0-SNAPSHOT</project.release.version>
+        <project.release.version>${file.version}-SNAPSHOT</project.release.version>
     </properties>
     <profiles>
         <profile>
             <id>product</id>
             <properties>
-                <project.release.version>1.4.0</project.release.version>
+                <project.release.version>${file.version}</project.release.version>
             </properties>
         </profile>
     </profiles>

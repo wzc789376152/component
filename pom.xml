@@ -12,9 +12,19 @@
         <module>filespringbootstarter</module>
         <module>filespringmvc</module>
         <module>ftpfilemanager</module>
+        <module>smb-file-manager</module>
         <module>shiro-springboot-starter</module>
         <module>mybatis-plus-code-generator</module>
+        <module>serverchan</module>
     </modules>
+    <properties>
+        <file.version>1.4.0</file.version>
+        <filespringbootstarter.version>1.4.0</filespringbootstarter.version>
+        <filespringmvc.version>1.4.0</filespringmvc.version>
+        <ftpfilemanager.version>1.3.0</ftpfilemanager.version>
+        <smbfilemanager.version>1.0.1</smbfilemanager.version>
+        <shirospringbootstarter.version>1.3.7</shirospringbootstarter.version>
+    </properties>
     <packaging>pom</packaging>
     <parent>
         <groupId>org.sonatype.oss</groupId>

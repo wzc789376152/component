@@ -25,7 +25,6 @@
         <artifactId>parent</artifactId>
         <version>1.1.0</version>
     </parent>
-    <groupId>com.github.wzc789376152</groupId>
     <artifactId>smb-file-manager</artifactId>
     <version>${project.release.version}</version>
     <packaging>jar</packaging>
@@ -34,13 +33,13 @@
     </description>
     <url>https://github.com/wzc789376152/component/tree/master/smb-file-manager</url>
     <properties>
-        <project.release.version>1.0.1-SNAPSHOT</project.release.version>
+        <project.release.version>${smbfilemanager.version}-SNAPSHOT</project.release.version>
     </properties>
     <profiles>
         <profile>
             <id>product</id>
             <properties>
-                <project.release.version>1.0.1</project.release.version>
+                <project.release.version>${smbfilemanager.version}</project.release.version>
             </properties>
         </profile>
     </profiles>
@@ -53,7 +52,7 @@
         <dependency>
             <groupId>com.github.wzc789376152</groupId>
             <artifactId>file</artifactId>
-            <version>1.4.0-SNAPSHOT</version>
+            <version>${file.version}-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
