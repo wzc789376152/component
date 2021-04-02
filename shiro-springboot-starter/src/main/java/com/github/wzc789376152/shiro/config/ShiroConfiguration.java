@@ -55,7 +55,8 @@ public class ShiroConfiguration {
     private CookieRememberMeManager cookieRememberMeManager;
     @Autowired(required = false)
     private DefaultSessionManager sessionManager;
-    @Resource(name = "shiroRedisCacheManager")
+    @Autowired(required = false)
+    @Qualifier(value = "shiroRedisCacheManager")
     private CacheManager cacheManager;
     @Autowired(required = false)
     private ShiroJwtRealm shiroJwtRealm;
@@ -98,7 +99,7 @@ public class ShiroConfiguration {
             securityManager.setAuthenticator(userModularRealmAuthenticator);
             realms.add(shiroJwtRealm);
         }
-        if(shiroCodeRealm!=null){
+        if (shiroCodeRealm != null) {
             realms.add(shiroCodeRealm);
         }
         realms.add(shiroRealm());
@@ -127,7 +128,7 @@ public class ShiroConfiguration {
         Map<String, String> filterChainDefinitionManager = new LinkedHashMap<String, String>();
         Map<String, Filter> filter = new LinkedHashMap<>(1);
         if (shiroJwtProperty != null && shiroJwtProperty.getEnable()) {
-            filter.put("jwt", new JwtFilter(shiroJwtProperty,shiroProperty));
+            filter.put("jwt", new JwtFilter(shiroJwtProperty, shiroProperty));
         }
         if (shiroProperty.getUrlPers() != null && shiroProperty.getUrlPers().size() > 0) {
             for (int i = 0; i < shiroProperty.getUrlPers().size(); i++) {
