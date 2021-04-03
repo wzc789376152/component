@@ -57,7 +57,7 @@ public class ShiroConfiguration {
     private DefaultSessionManager sessionManager;
     @Autowired(required = false)
     @Qualifier(value = "shiroRedisCacheManager")
-    private CacheManager cacheManager;
+    private CacheManager shiroRedisCacheManager;
     @Autowired(required = false)
     private ShiroJwtRealm shiroJwtRealm;
     @Autowired(required = false)
@@ -105,10 +105,9 @@ public class ShiroConfiguration {
         realms.add(shiroRealm());
         securityManager.setRealms(realms);
         if (shiroSessionProperty.getEnable()) {
-            if (cacheManager == null) {
-                cacheManager = ehCacheManager();
+            if (shiroRedisCacheManager != null) {
+                securityManager.setCacheManager(shiroRedisCacheManager);
             }
-            securityManager.setCacheManager(cacheManager);
             securityManager.setRememberMeManager(cookieRememberMeManager);
             securityManager.setSessionManager(sessionManager);
         } else {
@@ -165,8 +164,4 @@ public class ShiroConfiguration {
         return new GlobalExceptionResolver();
     }
 
-    public EhCacheManager ehCacheManager() {
-        EhCacheManager ehCacheManager = new EhCacheManager();
-        return ehCacheManager;
-    }
 }
