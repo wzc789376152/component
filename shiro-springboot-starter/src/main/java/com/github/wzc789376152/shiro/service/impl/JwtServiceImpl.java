@@ -9,21 +9,23 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.github.wzc789376152.shiro.properties.ShiroJwtProperty;
 import com.github.wzc789376152.shiro.service.IJwtService;
 import org.crazycake.shiro.RedisManager;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Date;
 import java.util.Set;
 
 public class JwtServiceImpl implements IJwtService {
-    @Autowired
-    private ShiroJwtProperty shiroJwtProperty;
-    @Autowired(required = false)
-    private RedisManager redisManager;
-    private String prefix = "shiro:jwt:";
+    public JwtServiceImpl(ShiroJwtProperty shiroJwtProperty, RedisManager redisManager) {
+        this.shiroJwtProperty = shiroJwtProperty;
+        this.redisManager = redisManager;
+    }
+
+    private final ShiroJwtProperty shiroJwtProperty;
+    private final RedisManager redisManager;
+    private final String prefix = "shiro:jwt:";
 
     @Override
     public String createToken(String username, String secret) {
-        if(!shiroJwtProperty.getMultipleLogin()){
+        if (!shiroJwtProperty.getMultipleLogin()) {
             multipleLoginOut(username);
         }
         Date start = new Date();
@@ -83,9 +85,9 @@ public class JwtServiceImpl implements IJwtService {
         }
     }
 
-    private Boolean multipleLoginOut(String username) {
+    private void multipleLoginOut(String username) {
         if (redisManager != null) {
-            Set<byte[]> keys = redisManager.keys((prefix+"*").getBytes());
+            Set<byte[]> keys = redisManager.keys((prefix + "*").getBytes());
             for (byte[] key : keys) {
                 byte[] valueByte = redisManager.get(key);
                 String value = new String(valueByte);
@@ -94,6 +96,5 @@ public class JwtServiceImpl implements IJwtService {
                 }
             }
         }
-        return true;
     }
 }

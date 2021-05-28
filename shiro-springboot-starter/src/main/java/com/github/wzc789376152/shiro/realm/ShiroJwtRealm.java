@@ -13,10 +13,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 
 public class ShiroJwtRealm extends AuthorizingRealm {
-    @Autowired
-    private IJwtService jwtService;
-    @Autowired
-    private IShiroService shiroService;
+    private final IJwtService jwtService;
+    private final IShiroService shiroService;
+
+    public ShiroJwtRealm(IJwtService jwtService, IShiroService shiroService) {
+        this.jwtService = jwtService;
+        this.shiroService = shiroService;
+    }
 
     @Override
     public boolean supports(AuthenticationToken token) {
