@@ -30,7 +30,7 @@ public class ShiroCodeConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean(IJwtService.class)
+    @ConditionalOnMissingBean(IShiroCodeService.class)
     public IShiroCodeService shiroCodeService() {
         return new CodeServiceImpl();
     }
