@@ -34,23 +34,7 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
      */
     @Override
     protected boolean isAccessAllowed(ServletRequest request, ServletResponse response, Object mappedValue) {
-        String token = ((HttpServletRequest) request).getHeader(shiroJwtProperty.getHeader());
-        if (token == null) {
-            Cookie[] cookies = ((HttpServletRequest) request).getCookies();
-            if (cookies != null) {
-                for (Cookie cookie : cookies) {
-                    if (cookie.getName().equals(shiroJwtProperty.getHeader())) {
-                        token = cookie.getValue();
-                        break;
-                    }
-                }
-            }
-        }
-        if (token != null) {
-            return executeLogin(request, response);
-        }
-        responseError(response, "用户未登录");
-        return false;
+        return executeLogin(request, response);
     }
 
     /**
@@ -58,25 +42,42 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
      */
     @Override
     protected boolean executeLogin(ServletRequest request, ServletResponse response) {
-        HttpServletRequest httpServletRequest = (HttpServletRequest) request;
-        String token = httpServletRequest.getHeader(shiroJwtProperty.getHeader());
-        if (token == null) {
-            Cookie[] cookies = ((HttpServletRequest) request).getCookies();
-            if (cookies != null) {
-                for (Cookie cookie : cookies) {
-                    if (cookie.getName().equals(shiroJwtProperty.getHeader())) {
-                        token = cookie.getValue();
-                        break;
+        String[] keyArray = shiroJwtProperty.getHeader().split(",");
+        boolean isLogin = false;
+        for (String key : keyArray) {
+            HttpServletRequest httpServletRequest = (HttpServletRequest) request;
+            String token = httpServletRequest.getHeader(key);
+            if (token == null) {
+                Cookie[] cookies = ((HttpServletRequest) request).getCookies();
+                if (cookies != null) {
+                    for (Cookie cookie : cookies) {
+                        if (cookie.getName().equals(key)) {
+                            token = cookie.getValue();
+                            break;
+                        }
                     }
                 }
             }
+            if (token != null) {
+                isLogin = isLogin(request, response, token);
+            }
+            if (isLogin) {
+                break;
+            }
         }
+        if (!isLogin) {
+            responseError(response, "用户未登录");
+        }
+        // 如果没有抛出异常则代表登入成功，返回true
+        return isLogin;
+    }
+
+    private boolean isLogin(ServletRequest request, ServletResponse response, String token) {
         JwtToken jwtToken = new JwtToken(token);
         // 提交给realm进行登入，如果错误他会抛出异常并被捕获
         try {
             getSubject(request, response).login(jwtToken);
         } catch (IncorrectCredentialsException e) {
-            responseError(response, "用户未登录");
             return false;
         }
         // 如果没有抛出异常则代表登入成功，返回true
