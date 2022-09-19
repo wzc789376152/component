@@ -3,6 +3,7 @@ package com.github.wzc789376152.shiro.filter;
 import com.github.wzc789376152.shiro.properties.ShiroJwtProperty;
 import com.github.wzc789376152.shiro.properties.ShiroProperty;
 import com.github.wzc789376152.shiro.token.JwtToken;
+import com.github.wzc789376152.shiro.utils.IpUtil;
 import org.apache.shiro.authc.IncorrectCredentialsException;
 import org.apache.shiro.web.filter.authc.BasicHttpAuthenticationFilter;
 
@@ -65,11 +66,11 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
                 break;
             }
         }
-        if (!isLogin) {
+        if (!isLogin && !IpUtil.checkIp(shiroJwtProperty.getIpWhileList())) {
             responseError(response, "用户未登录");
         }
         // 如果没有抛出异常则代表登入成功，返回true
-        return isLogin;
+        return true;
     }
 
     private boolean isLogin(ServletRequest request, ServletResponse response, String token) {

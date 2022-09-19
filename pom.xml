@@ -23,7 +23,7 @@
         <filespringmvc.version>1.4.0</filespringmvc.version>
         <ftpfilemanager.version>1.3.0</ftpfilemanager.version>
         <smbfilemanager.version>1.0.1</smbfilemanager.version>
-        <shirospringbootstarter.version>1.4.2</shirospringbootstarter.version>
+        <shirospringbootstarter.version>1.4.3</shirospringbootstarter.version>
     </properties>
     <packaging>pom</packaging>
     <parent>
