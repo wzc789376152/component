@@ -1,6 +1,6 @@
 package com.github.wzc789376152.shiro.utils;
 
-import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.util.StringUtils;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -34,59 +34,48 @@ public class IpUtil {
         if (request == null) {
             return null;
         }
-        String ip = request.getHeader("x-forwarded-for");
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("Proxy-Client-IP");
+        String ip = request.getHeader("XM-Proxy-Client-IP");
+        if (ip != null && ip.length() != 0 && !"unknown".equalsIgnoreCase(ip)) {
+            return formatIpv4(ip);
         }
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("WL-Proxy-Client-IP");
+        ip = request.getHeader("x-forwarded-for");
+        if (ip != null && ip.length() != 0 && !"unknown".equalsIgnoreCase(ip)) {
+            return formatIpv4(ip);
         }
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getRemoteAddr();
+        // nginx 代理服务器
+        ip = request.getHeader("X-Real-IP");
+        if (ip != null && ip.length() != 0 && !"unknown".equalsIgnoreCase(ip)) {
+            return formatIpv4(ip);
         }
-        //cast localhost
-        if ("0:0:0:0:0:0:0:1".equals(ip)) {
-            ip = getServerIp();
+        // apache http 做代理
+        ip = request.getHeader("Proxy-Client-IP");
+        if (ip != null && ip.length() != 0 && !"unknown".equalsIgnoreCase(ip)) {
+            return formatIpv4(ip);
         }
-        return ip;
+        // weblogic 插件
+        ip = request.getHeader("WL-Proxy-Client-IP");
+        if (ip != null && ip.length() != 0 && !"unknown".equalsIgnoreCase(ip)) {
+            return formatIpv4(ip);
+        }
+        // 有些代理服务器
+        ip = request.getHeader("HTTP_CLIENT_IP");
+        if (ip != null && ip.length() != 0 && !"unknown".equalsIgnoreCase(ip)) {
+            return formatIpv4(ip);
+        }
+        //
+        ip = request.getHeader("X-Forwarded-For");
+        if (ip != null && ip.length() != 0 && !"unknown".equalsIgnoreCase(ip)) {
+            return formatIpv4(ip);
+        }
+        return formatIpv4(request.getRemoteAddr());
     }
 
     public static String getIpAddr() {
-        return getIpAddr(getRequest());
+        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder
+                .getRequestAttributes();
+        return getIpAddr(requestAttributes == null ? null : requestAttributes.getRequest());
     }
 
-    public static boolean checkIp(List<String> ipWhileList) {
-        if(ipWhileList == null || ipWhileList.size() == 0){
-            return false;
-        }
-        String ipStr = IpUtil.getIpAddr();
-        if (ipStr != null) {
-            String[] ips = ipStr.split(",");
-            for (String ip : ips) {
-                ip = ip.trim();
-                String patternString = "(([0,1]?\\d?\\d|2[0-4]\\d|25[0-5])\\.){3}([0,1]?\\d?\\d|2[0-4]\\d|25[0-5])";
-                Pattern pattern = Pattern.compile(patternString);
-                Matcher matcher = pattern.matcher(ip);
-                if (matcher.matches()) {
-                    String[] m = ip.split("\\.");
-                    String ip1 = m[0] + "." + m[1] + "." + m[2] + ".0";
-                    String ip2 = m[0] + "." + m[1] + ".0.0";
-                    String ip3 = m[0] + ".0.0.0";
-                    List<String> ipList = new ArrayList<>();
-                    ipList.add(ip);
-                    ipList.add(ip1);
-                    ipList.add(ip2);
-                    ipList.add(ip3);
-                    for (String ipWhile : ipWhileList) {
-                        if (ipList.contains(ipWhile)) {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-        return false;
-    }
 
     /**
      * 获取服务器的ip地址
@@ -164,15 +153,48 @@ public class IpUtil {
         return map;
     }
 
-    /**
-     * 获取request
-     */
-    public static HttpServletRequest getRequest() {
-        return getRequestAttributes() == null ? null : getRequestAttributes().getRequest();
+    public static boolean checkIp(List<String> ipWhileList) {
+        if (ipWhileList == null || ipWhileList.size() == 0) {
+            return false;
+        }
+        String ip = IpUtil.getIpAddr();
+        if (StringUtils.isEmpty(ip)) {
+            return false;
+        }
+        ip = ip.trim();
+        String patternString = "(([0,1]?\\d?\\d|2[0-4]\\d|25[0-5])\\.){3}([0,1]?\\d?\\d|2[0-4]\\d|25[0-5])";
+        Pattern pattern = Pattern.compile(patternString);
+        Matcher matcher = pattern.matcher(ip);
+        if (matcher.matches()) {
+            String[] m = ip.split("\\.");
+            String ip1 = m[0] + "." + m[1] + "." + m[2] + ".0";
+            String ip2 = m[0] + "." + m[1] + ".0.0";
+            String ip3 = m[0] + ".0.0.0";
+            List<String> ipList = new ArrayList<>();
+            ipList.add(ip);
+            ipList.add(ip1);
+            ipList.add(ip2);
+            ipList.add(ip3);
+            for (String ipWhile : ipWhileList) {
+                if (ipList.contains(ipWhile)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
-    public static ServletRequestAttributes getRequestAttributes() {
-        RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
-        return (ServletRequestAttributes) attributes;
+    /**
+     * 格式化ip为标准ipv4
+     *
+     * @param ip
+     * @return
+     */
+    private static String formatIpv4(String ip) {
+        ip = ip.split(",")[0];
+        if ("localhost".equals(ip) || "0:0:0:0:0:0:0:1".equals(ip)) {
+            return "127.0.0.1";
+        }
+        return ip;
     }
 }
