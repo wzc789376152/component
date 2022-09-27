@@ -34,36 +34,8 @@ public class IpUtil {
         if (request == null) {
             return null;
         }
-        String ip = request.getHeader("XM-Proxy-Client-IP");
-        if (ip != null && ip.length() != 0 && !"unknown".equalsIgnoreCase(ip)) {
-            return formatIpv4(ip);
-        }
-        ip = request.getHeader("x-forwarded-for");
-        if (ip != null && ip.length() != 0 && !"unknown".equalsIgnoreCase(ip)) {
-            return formatIpv4(ip);
-        }
         // nginx 代理服务器
-        ip = request.getHeader("X-Real-IP");
-        if (ip != null && ip.length() != 0 && !"unknown".equalsIgnoreCase(ip)) {
-            return formatIpv4(ip);
-        }
-        // apache http 做代理
-        ip = request.getHeader("Proxy-Client-IP");
-        if (ip != null && ip.length() != 0 && !"unknown".equalsIgnoreCase(ip)) {
-            return formatIpv4(ip);
-        }
-        // weblogic 插件
-        ip = request.getHeader("WL-Proxy-Client-IP");
-        if (ip != null && ip.length() != 0 && !"unknown".equalsIgnoreCase(ip)) {
-            return formatIpv4(ip);
-        }
-        // 有些代理服务器
-        ip = request.getHeader("HTTP_CLIENT_IP");
-        if (ip != null && ip.length() != 0 && !"unknown".equalsIgnoreCase(ip)) {
-            return formatIpv4(ip);
-        }
-        //
-        ip = request.getHeader("X-Forwarded-For");
+        String ip = request.getHeader("X-Real-IP");
         if (ip != null && ip.length() != 0 && !"unknown".equalsIgnoreCase(ip)) {
             return formatIpv4(ip);
         }
