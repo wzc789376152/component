@@ -66,11 +66,14 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
                 break;
             }
         }
-        if (!isLogin && !IpUtil.checkIp(shiroJwtProperty.getIpWhileList())) {
-            responseError(response, "用户未登录");
+        if (IpUtil.checkIp(shiroJwtProperty.getIpWhileList())) {
+            return true;
         }
-        // 如果没有抛出异常则代表登入成功，返回true
-        return true;
+        if (isLogin) {
+            return true;
+        }
+        responseError(response, "用户未登录");
+        return false;
     }
 
     private boolean isLogin(ServletRequest request, ServletResponse response, String token) {
@@ -79,6 +82,7 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
         try {
             getSubject(request, response).login(jwtToken);
         } catch (IncorrectCredentialsException e) {
+            System.out.println("校验token失败:" + token);
             return false;
         }
         // 如果没有抛出异常则代表登入成功，返回true
