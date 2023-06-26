@@ -26,7 +26,7 @@ public class ShiroSessionConfiguration {
     /**
      * cookie管理器;
      *
-     * @return
+     * @return CookieRememberMeManager
      */
     @Bean
     public CookieRememberMeManager rememberMeManager() {

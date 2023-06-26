@@ -15,7 +15,7 @@ public class PasswordGenerateComponent {
      *
      * @param password 密码明文
      * @param salt     盐
-     * @return
+     * @return String
      */
     public String generatePassword(String password, String salt) {
         Md5Hash md5Hash = new Md5Hash(password, salt, shiroProperty.getHashIterations());

@@ -15,14 +15,6 @@ public class ShiroProperty {
      */
     private String successUrl;
     /**
-     * 默认登录地址
-     */
-    private String loginUrl;
-    /**
-     * 无权限访问地址
-     */
-    private String unauthorizedUrl;
-    /**
      * 密码加密次数
      */
     private Integer hashIterations;
@@ -35,23 +27,6 @@ public class ShiroProperty {
     public void setSuccessUrl(String successUrl) {
         this.successUrl = successUrl;
     }
-
-    public String getLoginUrl() {
-        return loginUrl;
-    }
-
-    public void setLoginUrl(String loginUrl) {
-        this.loginUrl = loginUrl;
-    }
-
-    public String getUnauthorizedUrl() {
-        return unauthorizedUrl;
-    }
-
-    public void setUnauthorizedUrl(String unauthorizedUrl) {
-        this.unauthorizedUrl = unauthorizedUrl;
-    }
-
 
     public Integer getHashIterations() {
         return hashIterations;

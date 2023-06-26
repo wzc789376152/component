@@ -1,5 +1,8 @@
 package com.github.wzc789376152.shiro.realm;
 
+import com.alibaba.fastjson.JSONObject;
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import com.github.wzc789376152.shiro.service.IJwtService;
 import com.github.wzc789376152.shiro.service.IShiroService;
 import com.github.wzc789376152.shiro.token.JwtToken;
@@ -11,15 +14,16 @@ import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.subject.PrincipalCollection;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.ArrayList;
+import java.util.List;
+
 
 public class ShiroJwtRealm extends AuthorizingRealm {
-    private final IJwtService jwtService;
-    private final IShiroService shiroService;
+    @Autowired(required = false)
+    private  IJwtService jwtService;
+    @Autowired(required = false)
+    private  IShiroService shiroService;
 
-    public ShiroJwtRealm(IJwtService jwtService, IShiroService shiroService) {
-        this.jwtService = jwtService;
-        this.shiroService = shiroService;
-    }
 
     @Override
     public boolean supports(AuthenticationToken token) {
@@ -32,28 +36,35 @@ public class ShiroJwtRealm extends AuthorizingRealm {
     @Override
     protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principals) {
         SimpleAuthorizationInfo authorizationInfo = new SimpleAuthorizationInfo();
-        // 添加角色
-        authorizationInfo.addRoles(shiroService.findRolesByObject((UserInfo) principals.getPrimaryPrincipal()));
-        // 添加权限
-        authorizationInfo.addStringPermissions(shiroService.findPermissionsByObject((UserInfo) principals.getPrimaryPrincipal()));
+        List<String> roles = shiroService.findRolesByObject((UserInfo) principals.getPrimaryPrincipal());
+        if (roles == null) {
+            roles = new ArrayList<>();
+        }
+        authorizationInfo.addRoles(roles);
+        List<String> permissions = shiroService.findPermissionsByObject((UserInfo) principals.getPrimaryPrincipal());
+        if (permissions == null) {
+            permissions = new ArrayList<>();
+        }
+        authorizationInfo.addStringPermissions(permissions);
         return authorizationInfo;
     }
 
     @Override
     protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken auth) throws AuthenticationException {
         String token = (String) auth.getCredentials();
-        String userName = jwtService.getUserName(token);
+        DecodedJWT jwt = JWT.decode(token);
+        String userInfo = jwt.getClaim("userInfo").asString();
         boolean verify = false;
         try {
-            if (userName != null) {
-                verify = jwtService.verify(token, userName, shiroService.findPasswordByUsername(userName));
+            if (userInfo != null) {
+                verify = jwtService.verify(token);
             }
         } catch (Exception e) {
         }
         if (!verify) {
             throw new IncorrectCredentialsException();
         }
-        return new SimpleAuthenticationInfo(shiroService.findUserInfoByUsername(userName), token, "Jwt");
+        return new SimpleAuthenticationInfo(JSONObject.parseObject(userInfo, UserInfo.class), token, "Jwt");
     }
 
     public void clearAuthenticationInfo() {

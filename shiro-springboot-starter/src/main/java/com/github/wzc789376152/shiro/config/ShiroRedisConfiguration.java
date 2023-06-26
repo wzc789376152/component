@@ -25,7 +25,7 @@ public class ShiroRedisConfiguration {
      * <p>
      * 使用的是shiro-redis开源插件
      *
-     * @return
+     * @return CacheManager
      */
     @Bean("shiroRedisCacheManager")
     public CacheManager cacheManager() {
@@ -38,6 +38,7 @@ public class ShiroRedisConfiguration {
      * RedisSessionDAO shiro sessionDao层的实现 通过redis
      * <p>
      * 使用的是shiro-redis开源插件
+     * @return SessionDAO
      */
     @Bean
     public SessionDAO redisSessionDAO() {
@@ -51,7 +52,7 @@ public class ShiroRedisConfiguration {
      * <p>
      * 使用的是shiro-redis开源插件
      *
-     * @return
+     * @return RedisManager
      */
     @Bean
     public RedisManager redisManager() {

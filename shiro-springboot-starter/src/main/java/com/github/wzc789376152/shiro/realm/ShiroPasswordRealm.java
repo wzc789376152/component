@@ -12,22 +12,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ShiroPasswordRealm extends AuthorizingRealm {
 
     private Logger logger = LoggerFactory.getLogger(ShiroPasswordRealm.class);
 
-    @Autowired
+    @Autowired(required = false)
     private IShiroService shiroService;
+
     @Override
     public boolean supports(AuthenticationToken token) {
         return token instanceof UsernamePasswordToken;
     }
+
     /**
      * 登录认证
      *
-     * @param authenticationToken
-     * @return
-     * @throws AuthenticationException
+     * @return AuthenticationInfo
      */
     @Override
     protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken authenticationToken)
@@ -40,14 +43,21 @@ public class ShiroPasswordRealm extends AuthorizingRealm {
     /**
      * 权限认证
      *
-     * @param principalCollection
-     * @return
+     * @return AuthorizationInfo
      */
     @Override
     protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principalCollection) {
         SimpleAuthorizationInfo info = new SimpleAuthorizationInfo();
-        info.addRoles(shiroService.findRolesByObject((UserInfo)principalCollection.getPrimaryPrincipal()));
-        info.addStringPermissions(shiroService.findPermissionsByObject((UserInfo)principalCollection.getPrimaryPrincipal()));
+        List<String> roles = shiroService.findRolesByObject((UserInfo) principalCollection.getPrimaryPrincipal());
+        if (roles == null) {
+            roles = new ArrayList<>();
+        }
+        info.addRoles(roles);
+        List<String> permissions = shiroService.findPermissionsByObject((UserInfo) principalCollection.getPrimaryPrincipal());
+        if (permissions == null) {
+            permissions = new ArrayList<>();
+        }
+        info.addStringPermissions(permissions);
         return info;
     }
 

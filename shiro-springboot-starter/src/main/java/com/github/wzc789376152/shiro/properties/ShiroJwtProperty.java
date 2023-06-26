@@ -7,19 +7,12 @@ import java.util.List;
 @ConfigurationProperties(prefix = "spring.shiro.jwt")
 public class ShiroJwtProperty {
     private Boolean enable = false;
-    private String header;
+    private List<String> headers;
     private Long timeout;
-    private Boolean multipleLogin = false;
+    private String secret;
 
     private List<String> ipWhileList;
 
-    public String getHeader() {
-        return header;
-    }
-
-    public void setHeader(String header) {
-        this.header = header;
-    }
 
     public Long getTimeout() {
         return timeout;
@@ -37,19 +30,27 @@ public class ShiroJwtProperty {
         this.enable = enable;
     }
 
-    public Boolean getMultipleLogin() {
-        return multipleLogin;
-    }
-
-    public void setMultipleLogin(Boolean multipleLogin) {
-        this.multipleLogin = multipleLogin;
-    }
-
     public List<String> getIpWhileList() {
         return ipWhileList;
     }
 
     public void setIpWhileList(List<String> ipWhileList) {
         this.ipWhileList = ipWhileList;
+    }
+
+    public String getSecret() {
+        return secret;
+    }
+
+    public void setSecret(String secret) {
+        this.secret = secret;
+    }
+
+    public List<String> getHeaders() {
+        return headers;
+    }
+
+    public void setHeaders(List<String> headers) {
+        this.headers = headers;
     }
 }

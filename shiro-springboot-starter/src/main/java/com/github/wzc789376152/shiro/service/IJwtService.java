@@ -1,18 +1,13 @@
 package com.github.wzc789376152.shiro.service;
 
+import com.github.wzc789376152.shiro.realm.UserInfo;
+
 public interface IJwtService {
     /**
      * 创建token
-     *
-     * @param username
-     * @param secret
-     * @return
+     * @return string
      */
-    String createToken(String username, String secret);
+    String createToken(UserInfo userInfo);
 
-    Boolean verify(String token, String username, String secret);
-
-    Boolean cancel(String token);
-
-    String getUserName(String token);
+    Boolean verify(String token);
 }

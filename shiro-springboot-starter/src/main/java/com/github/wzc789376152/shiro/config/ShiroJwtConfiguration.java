@@ -22,25 +22,16 @@ import org.springframework.context.annotation.Lazy;
 @ConditionalOnClass(IJwtService.class)
 public class ShiroJwtConfiguration {
     @Autowired
-    @Lazy
-    IJwtService jwtService;
-    @Autowired
-    @Lazy
-    IShiroService shiroService;
-    @Autowired
     private ShiroJwtProperty shiroJwtProperty;
-    @Autowired(required = false)
-    @Lazy
-    private RedisManager redisManager;
 
     @Bean("jwtRealm")
     public ShiroJwtRealm realm() {
-        return new ShiroJwtRealm(jwtService, shiroService);
+        return new ShiroJwtRealm();
     }
 
     @Bean
     @ConditionalOnMissingBean(IJwtService.class)
     public IJwtService jwtService() {
-        return new JwtServiceImpl(shiroJwtProperty,redisManager);
+        return new JwtServiceImpl(shiroJwtProperty);
     }
 }

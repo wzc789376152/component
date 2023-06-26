@@ -11,25 +11,22 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 public class GlobalExceptionResolver implements HandlerExceptionResolver {
-    @Autowired
-    private ShiroProperty shiroProperty;
-
     @Override
     public ModelAndView resolveException(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
         ModelAndView mv;
         //进行异常判断。如果捕获异常请求跳转。
         if (ex instanceof UnauthorizedException) {
-            mv = new ModelAndView("redirect:"+shiroProperty.getUnauthorizedUrl());
-            mv.addObject("msg", "没有此角色权限！");
+            mv = new ModelAndView("redirect:/accountError/unauthorized");
+            mv.addObject("msg", "没有此角色或权限！");
             return mv;
         } else if (ex instanceof UnauthenticatedException) {
-            mv = new ModelAndView("redirect:"+shiroProperty.getUnauthorizedUrl());
+            mv = new ModelAndView("redirect:/accountError/unauthorized");
             mv.addObject("msg", "没有此权限！");
             return mv;
         } else {
-            mv = new ModelAndView("redirect:"+shiroProperty.getLoginUrl());
+            mv = new ModelAndView("redirect:/accountError/unlogin");
             ex.printStackTrace();
-            mv.addObject("msg", "验证失败!");
+            mv.addObject("msg", "登录验证失败!");
             return mv;
         }
     }

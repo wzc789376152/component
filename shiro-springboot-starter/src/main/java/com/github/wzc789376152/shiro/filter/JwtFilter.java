@@ -2,10 +2,13 @@ package com.github.wzc789376152.shiro.filter;
 
 import com.github.wzc789376152.shiro.properties.ShiroJwtProperty;
 import com.github.wzc789376152.shiro.properties.ShiroProperty;
+import com.github.wzc789376152.shiro.realm.ShiroPasswordRealm;
 import com.github.wzc789376152.shiro.token.JwtToken;
 import com.github.wzc789376152.shiro.utils.IpUtil;
 import org.apache.shiro.authc.IncorrectCredentialsException;
 import org.apache.shiro.web.filter.authc.BasicHttpAuthenticationFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -14,9 +17,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.List;
 
 
 public class JwtFilter extends BasicHttpAuthenticationFilter {
+    private Logger logger = LoggerFactory.getLogger(JwtFilter.class);
+
     ShiroJwtProperty shiroJwtProperty;
     ShiroProperty shiroProperty;
 
@@ -43,7 +49,7 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
      */
     @Override
     protected boolean executeLogin(ServletRequest request, ServletResponse response) {
-        String[] keyArray = shiroJwtProperty.getHeader().split(",");
+        List<String> keyArray = shiroJwtProperty.getHeaders();
         boolean isLogin = false;
         for (String key : keyArray) {
             HttpServletRequest httpServletRequest = (HttpServletRequest) request;
@@ -82,7 +88,7 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
         try {
             getSubject(request, response).login(jwtToken);
         } catch (IncorrectCredentialsException e) {
-            System.out.println("校验token失败:" + token);
+            logger.error("校验token失败", e);
             return false;
         }
         // 如果没有抛出异常则代表登入成功，返回true
