@@ -19,6 +19,12 @@ public class AccountErrorController {
         return msg == null ? "用户未登录" : msg;
     }
 
+    @GetMapping("/timeout")
+    public String timeout(@RequestParam(required = false, value = "msg") String msg, HttpServletResponse response) {
+        response.setStatus(402);
+        return msg == null ? "Token失效" : msg;
+    }
+
     @GetMapping("/unauthorized")
     public String unauthorized(@RequestParam(required = false, value = "msg") String msg, HttpServletResponse response) {
         response.setStatus(403);

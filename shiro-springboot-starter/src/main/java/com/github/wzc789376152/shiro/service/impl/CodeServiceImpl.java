@@ -20,28 +20,28 @@ public class CodeServiceImpl implements IShiroCodeService {
     private Map<String, String> codeMap = new HashMap<>();
 
     @Override
-    public String get(String username) {
+    public String get(String username, String host) {
         if (redisManager != null) {
-            byte[] bytes = redisManager.get((prefix + username).getBytes());
+            byte[] bytes = redisManager.get((prefix + username + ":" + host).getBytes());
             if (bytes == null) {
                 return null;
             }
             return new String(bytes);
         }
-        return codeMap.get(prefix + username);
+        return codeMap.get(prefix + username + ":" + host);
     }
 
     @Override
-    public Boolean save(String username, String salt, String code) {
+    public Boolean save(String username, String host, String salt, String code) {
         String generateCode = passwordGenerateComponent.generatePassword(code, salt);
         if (redisManager != null) {
             Integer timeout = shiroCodeProperty.getTimeout();
             if (timeout == null) {
                 timeout = redisManager.getTimeout();
             }
-            redisManager.set((prefix + username).getBytes(), generateCode.getBytes(), timeout);
+            redisManager.set((prefix + username + ":" + host).getBytes(), generateCode.getBytes(), timeout);
         }
-        codeMap.put(prefix + username, generateCode);
+        codeMap.put(prefix + username + ":" + host, generateCode);
         return true;
     }
 }

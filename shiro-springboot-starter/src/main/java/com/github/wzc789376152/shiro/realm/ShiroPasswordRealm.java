@@ -37,7 +37,7 @@ public class ShiroPasswordRealm extends AuthorizingRealm {
             throws AuthenticationException {
         UsernamePasswordToken token = (UsernamePasswordToken) authenticationToken;
         // 若存在，将此用户存放到登录认证info中，无需自己做密码对比，Shiro会为我们进行密码对比校验
-        return new SimpleAuthenticationInfo(shiroService.findUserInfoByUsername(token.getUsername()), shiroService.findPasswordByUsername(token.getUsername()), ByteSource.Util.bytes(shiroService.findSaltByUsername(token.getUsername())), "Password");
+        return new SimpleAuthenticationInfo(shiroService.findUserInfoByUsername(token.getUsername(),token.getHost()), shiroService.findPasswordByUsername(token.getUsername(),token.getHost()), ByteSource.Util.bytes(shiroService.findSaltByUsername(token.getUsername(),token.getHost())), "Password");
     }
 
     /**

@@ -6,8 +6,8 @@ import java.util.Date;
 public class UserInfo implements Serializable {
     private Serializable id;
     private String username;
-
     private Date createTime;
+    private String host;
 
     public Serializable getId() {
         return id;
@@ -31,5 +31,13 @@ public class UserInfo implements Serializable {
 
     public void setCreateTime(Date createTime) {
         this.createTime = createTime;
+    }
+
+    public String getHost() {
+        return host;
+    }
+
+    public void setHost(String host) {
+        this.host = host;
     }
 }

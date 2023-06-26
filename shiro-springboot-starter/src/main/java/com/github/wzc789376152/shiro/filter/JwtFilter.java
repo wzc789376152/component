@@ -1,10 +1,12 @@
 package com.github.wzc789376152.shiro.filter;
 
+import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.github.wzc789376152.shiro.properties.ShiroJwtProperty;
 import com.github.wzc789376152.shiro.properties.ShiroProperty;
 import com.github.wzc789376152.shiro.realm.ShiroPasswordRealm;
 import com.github.wzc789376152.shiro.token.JwtToken;
 import com.github.wzc789376152.shiro.utils.IpUtil;
+import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.IncorrectCredentialsException;
 import org.apache.shiro.web.filter.authc.BasicHttpAuthenticationFilter;
 import org.slf4j.Logger;
@@ -51,6 +53,7 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
     protected boolean executeLogin(ServletRequest request, ServletResponse response) {
         List<String> keyArray = shiroJwtProperty.getHeaders();
         boolean isLogin = false;
+        boolean isTimeout = false;
         for (String key : keyArray) {
             HttpServletRequest httpServletRequest = (HttpServletRequest) request;
             String token = httpServletRequest.getHeader(key);
@@ -66,11 +69,24 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
                 }
             }
             if (token != null) {
-                isLogin = isLogin(request, response, token);
+                JwtToken jwtToken = new JwtToken(token);
+                // 提交给realm进行登入，如果错误他会抛出异常并被捕获
+                try {
+                    getSubject(request, response).login(jwtToken);
+                    isLogin = true;
+                } catch (AuthenticationException e) {
+                    if (e.getCause() instanceof TokenExpiredException) {
+                        isTimeout = true;
+                    }
+                }
             }
             if (isLogin) {
                 break;
             }
+        }
+        if (!isLogin && isTimeout) {
+            responseError(response, 402, "token已过期");
+            return false;
         }
         if (IpUtil.checkIp(shiroJwtProperty.getIpWhileList())) {
             return true;
@@ -78,21 +94,8 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
         if (isLogin) {
             return true;
         }
-        responseError(response, "用户未登录");
+        responseError(response, 401, "用户未登录");
         return false;
-    }
-
-    private boolean isLogin(ServletRequest request, ServletResponse response, String token) {
-        JwtToken jwtToken = new JwtToken(token);
-        // 提交给realm进行登入，如果错误他会抛出异常并被捕获
-        try {
-            getSubject(request, response).login(jwtToken);
-        } catch (IncorrectCredentialsException e) {
-            logger.error("校验token失败", e);
-            return false;
-        }
-        // 如果没有抛出异常则代表登入成功，返回true
-        return true;
     }
 
     /**
@@ -106,10 +109,10 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
     /**
      * 请求异常则需要重新登录
      */
-    private void responseError(ServletResponse response, String message) {
+    private void responseError(ServletResponse response, int status, String message) {
         response.setCharacterEncoding("UTF-8");
         response.setContentType("application/json; charset=utf-8");
-        ((HttpServletResponse) response).setStatus(401);
+        ((HttpServletResponse) response).setStatus(status);
         OutputStream out = null;
         try {
             out = response.getOutputStream();

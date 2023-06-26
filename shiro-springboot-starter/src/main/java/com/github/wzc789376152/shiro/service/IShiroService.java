@@ -5,11 +5,11 @@ import com.github.wzc789376152.shiro.realm.UserInfo;
 import java.util.List;
 
 public interface IShiroService {
-    UserInfo findUserInfoByUsername(String username);
+    UserInfo findUserInfoByUsername(String username,String host);
 
-    String findPasswordByUsername(String username);
+    String findPasswordByUsername(String username,String host);
 
-    String findSaltByUsername(String username);
+    String findSaltByUsername(String username,String host);
 
     List<String> findRolesByObject(UserInfo object);
 

@@ -2,6 +2,7 @@ package com.github.wzc789376152.shiro.realm;
 
 import com.alibaba.fastjson.JSONObject;
 import com.auth0.jwt.JWT;
+import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.github.wzc789376152.shiro.service.IJwtService;
 import com.github.wzc789376152.shiro.service.IShiroService;
@@ -20,9 +21,9 @@ import java.util.List;
 
 public class ShiroJwtRealm extends AuthorizingRealm {
     @Autowired(required = false)
-    private  IJwtService jwtService;
+    private IJwtService jwtService;
     @Autowired(required = false)
-    private  IShiroService shiroService;
+    private IShiroService shiroService;
 
 
     @Override
@@ -50,20 +51,14 @@ public class ShiroJwtRealm extends AuthorizingRealm {
     }
 
     @Override
-    protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken auth) throws AuthenticationException {
+    protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken auth) {
         String token = (String) auth.getCredentials();
+        boolean verify = jwtService.verify(token);
+        if (!verify) {
+            throw new TokenExpiredException("token已失效");
+        }
         DecodedJWT jwt = JWT.decode(token);
         String userInfo = jwt.getClaim("userInfo").asString();
-        boolean verify = false;
-        try {
-            if (userInfo != null) {
-                verify = jwtService.verify(token);
-            }
-        } catch (Exception e) {
-        }
-        if (!verify) {
-            throw new IncorrectCredentialsException();
-        }
         return new SimpleAuthenticationInfo(JSONObject.parseObject(userInfo, UserInfo.class), token, "Jwt");
     }
 

@@ -23,7 +23,7 @@
         <filespringmvc.version>2.0.0</filespringmvc.version>
         <ftpfilemanager.version>2.0.0</ftpfilemanager.version>
         <smbfilemanager.version>2.0.0</smbfilemanager.version>
-        <shirospringbootstarter.version>2.0.0</shirospringbootstarter.version>
+        <shirospringbootstarter.version>2.0.1</shirospringbootstarter.version>
         <serverchan.version>2.0.0</serverchan.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

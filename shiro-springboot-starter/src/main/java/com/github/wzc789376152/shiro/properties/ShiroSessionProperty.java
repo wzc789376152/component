@@ -4,7 +4,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "spring.shiro.session")
 public class ShiroSessionProperty {
-    private Boolean enable = true;
+    private Boolean enable = false;
     /**
      * rememberme cookie加密的密钥 默认AES算法 密钥长度（128 256 512 位）
      */

@@ -1,6 +1,8 @@
 package com.github.wzc789376152.shiro.exception;
 
+import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.github.wzc789376152.shiro.properties.ShiroProperty;
+import org.apache.shiro.authc.IncorrectCredentialsException;
 import org.apache.shiro.authz.UnauthenticatedException;
 import org.apache.shiro.authz.UnauthorizedException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,11 +25,18 @@ public class GlobalExceptionResolver implements HandlerExceptionResolver {
             mv = new ModelAndView("redirect:/accountError/unauthorized");
             mv.addObject("msg", "没有此权限！");
             return mv;
-        } else {
+        } else if (ex instanceof IncorrectCredentialsException) {
             mv = new ModelAndView("redirect:/accountError/unlogin");
             ex.printStackTrace();
             mv.addObject("msg", "登录验证失败!");
             return mv;
+        } else if (ex instanceof TokenExpiredException) {
+            mv = new ModelAndView("redirect:/accountError/timeout");
+            ex.printStackTrace();
+            mv.addObject("msg", "Token已过期!");
+            return mv;
+        } else {
+            return null;
         }
     }
 }

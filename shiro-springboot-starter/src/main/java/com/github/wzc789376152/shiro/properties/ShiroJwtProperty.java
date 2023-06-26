@@ -9,6 +9,7 @@ public class ShiroJwtProperty {
     private Boolean enable = false;
     private List<String> headers;
     private Long timeout;
+    private Long refreshTimeout;
     private String secret;
 
     private List<String> ipWhileList;
@@ -52,5 +53,13 @@ public class ShiroJwtProperty {
 
     public void setHeaders(List<String> headers) {
         this.headers = headers;
+    }
+
+    public Long getRefreshTimeout() {
+        return refreshTimeout;
+    }
+
+    public void setRefreshTimeout(Long refreshTimeout) {
+        this.refreshTimeout = refreshTimeout;
     }
 }
