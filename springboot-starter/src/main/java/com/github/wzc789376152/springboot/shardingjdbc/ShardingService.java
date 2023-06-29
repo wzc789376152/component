@@ -128,6 +128,10 @@ public class ShardingService<T> implements IShardingService<T> {
         if (listMethod == null || countMethod == null) {
             return AsyncResult.forValue(new ArrayList<>());
         }
+        Boolean isAll = false;
+        if (pageSize == 0) {
+            isAll = true;
+        }
         final Integer[] size = {pageSize};
         QueryWrapper<?> queryWrapper = wrapper.clone();
         String expressBaseStr = queryWrapper.getCustomSqlSegment();
@@ -145,6 +149,7 @@ public class ShardingService<T> implements IShardingService<T> {
                 endTime = finalTime;
             }
         }
+        Boolean finalIsAll = isAll;
         return executor.submit(() -> {
             //按照时间分片
             List<DateBetween> betweenList = null;
@@ -223,11 +228,13 @@ public class ShardingService<T> implements IShardingService<T> {
                     Future<List<T>> future = searchExecutor.submit(() -> listMethod.apply(queryWrapper1, finalLimit, finalBeginSize));
                     resultMap.put(i, future);
                     beginSize = 0;
-                    if (size[0] == 0 || limit.equals(size[0])) {
-                        isEnd = true;
-                    } else {
-                        //查询完成将查询的条目减掉，如需查询20条，该表只查了15条，下次查询则只需查询5条
-                        size[0] = size[0] - limit;
+                    if (!finalIsAll) {
+                        if (size[0] == 0 || limit.equals(size[0])) {
+                            isEnd = true;
+                        } else {
+                            //查询完成将查询的条目减掉，如需查询20条，该表只查了15条，下次查询则只需查询5条
+                            size[0] = size[0] - limit;
+                        }
                     }
                 }
                 i++;
