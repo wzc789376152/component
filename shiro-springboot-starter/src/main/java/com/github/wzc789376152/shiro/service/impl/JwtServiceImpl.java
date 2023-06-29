@@ -8,9 +8,9 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.github.wzc789376152.shiro.properties.ShiroJwtProperty;
-import com.github.wzc789376152.shiro.realm.UserInfo;
 import com.github.wzc789376152.shiro.service.IJwtService;
 import com.github.wzc789376152.shiro.token.JwtTokenResult;
+import com.github.wzc789376152.vo.UserInfo;
 
 import java.util.Date;
 

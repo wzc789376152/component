@@ -1,6 +1,7 @@
 package com.github.wzc789376152.shiro.realm;
 
 import com.github.wzc789376152.shiro.service.IShiroService;
+import com.github.wzc789376152.vo.UserInfo;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authc.*;
 import org.apache.shiro.authz.AuthorizationInfo;

@@ -1,11 +1,11 @@
 package com.github.wzc789376152.shiro.service;
 
-import com.github.wzc789376152.shiro.realm.UserInfo;
+import com.github.wzc789376152.vo.UserInfo;
 
 import java.util.List;
 
 public interface IShiroService {
-    UserInfo findUserInfoByUsername(String username,String host);
+    UserInfo findUserInfoByUsername(String username, String host);
 
     String findPasswordByUsername(String username,String host);
 

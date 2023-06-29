@@ -3,11 +3,12 @@ package com.github.wzc789376152.shiro.filter;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.github.wzc789376152.shiro.properties.ShiroJwtProperty;
 import com.github.wzc789376152.shiro.properties.ShiroProperty;
-import com.github.wzc789376152.shiro.realm.ShiroPasswordRealm;
 import com.github.wzc789376152.shiro.token.JwtToken;
-import com.github.wzc789376152.shiro.utils.IpUtil;
+import com.github.wzc789376152.utils.IpUtil;
+import com.github.wzc789376152.utils.TokenUtils;
+import com.github.wzc789376152.vo.UserInfo;
+import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authc.AuthenticationException;
-import org.apache.shiro.authc.IncorrectCredentialsException;
 import org.apache.shiro.web.filter.authc.BasicHttpAuthenticationFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,9 +55,10 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
         List<String> keyArray = shiroJwtProperty.getHeaders();
         boolean isLogin = false;
         boolean isTimeout = false;
+        String token = null;
         for (String key : keyArray) {
             HttpServletRequest httpServletRequest = (HttpServletRequest) request;
-            String token = httpServletRequest.getHeader(key);
+            token = httpServletRequest.getHeader(key);
             if (token == null) {
                 Cookie[] cookies = ((HttpServletRequest) request).getCookies();
                 if (cookies != null) {
@@ -92,6 +94,9 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
             return true;
         }
         if (isLogin) {
+            UserInfo userInfo = (UserInfo) SecurityUtils.getSubject().getPrincipal();
+            userInfo.setToken(token);
+            TokenUtils.setUserInfo(userInfo);
             return true;
         }
         responseError(response, 401, "用户未登录");

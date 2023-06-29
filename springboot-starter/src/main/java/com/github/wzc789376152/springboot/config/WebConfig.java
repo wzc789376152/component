@@ -1,0 +1,105 @@
+package com.github.wzc789376152.springboot.config;
+
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import com.github.wzc789376152.springboot.annotation.AppRestController;
+import com.github.wzc789376152.springboot.annotation.OpenRestController;
+import com.github.wzc789376152.utils.DateUtils;
+import io.netty.util.internal.StringUtil;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.format.FormatterRegistry;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+    @Value(value = "${spring.jackson.date-format:yyyy-MM-dd HH:mm:ss}")
+    private String dateFormat;
+
+    /**
+     * 使用此方法 解决, 以下 spring-boot: jackson时间格式化 配置 失效 问题
+     * <p>
+     * spring.jackson.time-zone=GMT+8
+     * spring.jackson.date-format=yyyy-MM-dd HH:mm:ss
+     * 原因: 会覆盖 @EnableAutoConfiguration 关于 WebMvcAutoConfiguration 的配置
+     */
+    @Override
+    public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
+        MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
+        ObjectMapper objectMapper = converter.getObjectMapper();
+        // 生成JSON时,将所有Long转换成String
+        SimpleModule simpleModule = new SimpleModule();
+        simpleModule.addSerializer(Long.class, ToStringSerializer.instance);
+        simpleModule.addSerializer(Long.TYPE, ToStringSerializer.instance);
+        simpleModule.addSerializer(BigDecimal.class, BigDecimalStringSerilizer.instance);
+        simpleModule.addKeySerializer(BigDecimal.class, BigDecimalStringSerilizer.instance);
+        objectMapper.registerModule(simpleModule);
+        // 时间格式化
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        //自动加载机制没有加载到 spring.jackson.date-format 配置，这里手动加进来
+        objectMapper.setDateFormat(new SimpleDateFormat(dateFormat));
+        // 设置格式化内容
+        converter.setObjectMapper(objectMapper);
+        converters.add(0, converter);
+
+    }
+
+    @Override
+    public void configurePathMatch(PathMatchConfigurer configurer) {
+        configurer.addPathPrefix("/app", cls -> cls.isAnnotationPresent(AppRestController.class));
+        configurer.addPathPrefix("/v", cls -> cls.isAnnotationPresent(OpenRestController.class));
+    }
+
+
+    @Override
+    public void addFormatters(FormatterRegistry registry) {
+        registry.addConverter(new DateConvert());
+    }
+
+    public static class DateConvert implements Converter<String, Date> {
+        @Override
+        public Date convert(String s) {
+            if (StringUtil.isNullOrEmpty(s)) {
+                return null;
+            }
+            Date date = DateUtils.parseString(s);
+            if (date == null) {
+                throw new IllegalArgumentException("时间格式错误," + s);
+            }
+            return date;
+        }
+    }
+
+    public static class BigDecimalStringSerilizer extends StdSerializer<BigDecimal> {
+        public final static BigDecimalStringSerilizer instance = new BigDecimalStringSerilizer();
+
+        public BigDecimalStringSerilizer() {
+            super(BigDecimal.class);
+        }
+
+        @Override
+        public void serialize(BigDecimal bigDecimal, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
+            if (bigDecimal == null) {
+                jsonGenerator.writeString("0");
+            } else {
+                String val = bigDecimal.stripTrailingZeros().toPlainString();
+                jsonGenerator.writeString(val);
+            }
+        }
+    }
+}

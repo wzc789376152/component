@@ -1,4 +1,4 @@
-package com.github.wzc789376152.shiro.utils;
+package com.github.wzc789376152.utils;
 
 import org.springframework.util.StringUtils;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -124,7 +124,6 @@ public class IpUtil {
         }
         return map;
     }
-
     public static boolean checkIp(List<String> ipWhileList) {
         if (ipWhileList == null || ipWhileList.size() == 0) {
             return false;
@@ -155,7 +154,6 @@ public class IpUtil {
         }
         return false;
     }
-
     /**
      * 格式化ip为标准ipv4
      *

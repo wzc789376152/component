@@ -6,8 +6,10 @@
 
     <groupId>com.github.wzc789376152</groupId>
     <artifactId>parent</artifactId>
-    <version>2.0.0</version>
+    <version>2.0.1</version>
     <modules>
+        <module>common</module>
+        <module>springboot-starter</module>
         <module>file</module>
         <module>filespringbootstarter</module>
         <module>filespringmvc</module>
@@ -18,12 +20,14 @@
         <module>serverchan</module>
     </modules>
     <properties>
+        <common.version>1.0.0</common.version>
+        <springbootstarter.version>1.0.0</springbootstarter.version>
         <file.version>2.0.0</file.version>
         <filespringbootstarter.version>2.0.0</filespringbootstarter.version>
         <filespringmvc.version>2.0.0</filespringmvc.version>
         <ftpfilemanager.version>2.0.0</ftpfilemanager.version>
         <smbfilemanager.version>2.0.0</smbfilemanager.version>
-        <shirospringbootstarter.version>2.0.1</shirospringbootstarter.version>
+        <shirospringbootstarter.version>2.0.2</shirospringbootstarter.version>
         <serverchan.version>2.0.0</serverchan.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -141,20 +145,6 @@
                 <version>${spring-boot.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
-
-            <!-- SpringBoot 监控客户端 -->
-            <dependency>
-                <groupId>de.codecentric</groupId>
-                <artifactId>spring-boot-admin-starter-client</artifactId>
-                <version>${spring-boot-admin.version}</version>
-            </dependency>
-
-            <!-- FastDFS 分布式文件系统 -->
-            <dependency>
-                <groupId>com.github.tobato</groupId>
-                <artifactId>fastdfs-client</artifactId>
-                <version>${tobato.version}</version>
             </dependency>
 
             <!-- Swagger 依赖配置 -->
@@ -293,12 +283,6 @@
                 <groupId>org.redisson</groupId>
                 <artifactId>redisson</artifactId>
                 <version>${redisson.version}</version>
-            </dependency>
-            <!-- 鉴权sdk -->
-            <dependency>
-                <groupId>cn.xuanma</groupId>
-                <artifactId>xm-auth-sdk</artifactId>
-                <version>${xm.auth.sdk.version}</version>
             </dependency>
             <!-- knife4j  Swagger-ui -->
             <dependency>
