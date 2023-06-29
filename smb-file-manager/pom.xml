@@ -34,13 +34,13 @@
     </description>
     <url>https://github.com/wzc789376152/component/tree/master/smb-file-manager</url>
     <properties>
-        <project.release.version>${smbfilemanager.version}</project.release.version>
+        <project.release.version>${parent.version}</project.release.version>
     </properties>
     <profiles>
         <profile>
             <id>snapshot</id>
             <properties>
-                <project.release.version>${smbfilemanager.version}-SNAPSHOT</project.release.version>
+                <project.release.version>${parent.version}-SNAPSHOT</project.release.version>
             </properties>
         </profile>
     </profiles>

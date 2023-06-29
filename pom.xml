@@ -19,16 +19,6 @@
         <module>serverchan</module>
     </modules>
     <properties>
-        <common.version>${parent.version}</common.version>
-        <springbootstarter.version>${parent.version}</springbootstarter.version>
-        <file.version>${parent.version}</file.version>
-        <filespringbootstarter.version>${parent.version}</filespringbootstarter.version>
-        <filespringmvc.version>${parent.version}</filespringmvc.version>
-        <ftpfilemanager.version>${parent.version}</ftpfilemanager.version>
-        <smbfilemanager.version>${parent.version}</smbfilemanager.version>
-        <shirospringbootstarter.version>${parent.version}</shirospringbootstarter.version>
-        <serverchan.version>${parent.version}</serverchan.version>
-
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
@@ -101,6 +91,51 @@
     <!-- 依赖声明 -->
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>com.github.wzc789376152</groupId>
+                <artifactId>common</artifactId>
+                <version>${version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.wzc789376152</groupId>
+                <artifactId>serverchan</artifactId>
+                <version>${version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.wzc789376152</groupId>
+                <artifactId>file</artifactId>
+                <version>${version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.wzc789376152</groupId>
+                <artifactId>ftp-file-manager</artifactId>
+                <version>${version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.wzc789376152</groupId>
+                <artifactId>smb-file-manager</artifactId>
+                <version>${version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.wzc789376152</groupId>
+                <artifactId>file-springboot-starter</artifactId>
+                <version>${version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.wzc789376152</groupId>
+                <artifactId>springboot-starter</artifactId>
+                <version>${version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.wzc789376152</groupId>
+                <artifactId>file-springmvc</artifactId>
+                <version>${version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.wzc789376152</groupId>
+                <artifactId>shiro-springboot-starter</artifactId>
+                <version>${version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.apache.tomcat.embed</groupId>
                 <artifactId>tomcat-embed-core</artifactId>

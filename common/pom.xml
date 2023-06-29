@@ -18,13 +18,13 @@
     </description>
     <url>https://github.com/wzc789376152/component/tree/master/file</url>
     <properties>
-        <project.release.version>${common.version}</project.release.version>
+        <project.release.version>${parent.version}</project.release.version>
     </properties>
     <profiles>
         <profile>
             <id>snapshot</id>
             <properties>
-                <project.release.version>${common.version}-SNAPSHOT</project.release.version>
+                <project.release.version>${parent.version}-SNAPSHOT</project.release.version>
             </properties>
         </profile>
     </profiles>

@@ -10,13 +10,13 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <properties>
-        <project.release.version>${filespringmvc.version}</project.release.version>
+        <project.release.version>${parent.version}</project.release.version>
     </properties>
     <profiles>
         <profile>
             <id>snapshot</id>
             <properties>
-                <project.release.version>${filespringmvc.version}-SNAPSHOT</project.release.version>
+                <project.release.version>${parent.version}-SNAPSHOT</project.release.version>
             </properties>
         </profile>
     </profiles>
