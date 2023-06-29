@@ -187,5 +187,11 @@
             <version>${common.version}</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>com.github.wzc789376152</groupId>
+            <artifactId>file</artifactId>
+            <version>${file.version}</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 </project>

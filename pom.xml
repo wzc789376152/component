@@ -11,17 +11,17 @@
         <module>common</module>
         <module>springboot-starter</module>
         <module>file</module>
-        <module>filespringbootstarter</module>
-        <module>filespringmvc</module>
         <module>ftpfilemanager</module>
         <module>smb-file-manager</module>
+        <module>filespringmvc</module>
+        <module>filespringbootstarter</module>
         <module>shiro-springboot-starter</module>
         <module>mybatis-plus-code-generator</module>
         <module>serverchan</module>
     </modules>
     <properties>
         <common.version>1.0.0</common.version>
-        <springbootstarter.version>1.0.0</springbootstarter.version>
+        <springbootstarter.version>1.0.1</springbootstarter.version>
         <file.version>2.0.1</file.version>
         <filespringbootstarter.version>2.0.1</filespringbootstarter.version>
         <filespringmvc.version>2.0.1</filespringmvc.version>

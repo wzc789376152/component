@@ -51,19 +51,19 @@
         <dependency>
             <groupId>com.github.wzc789376152</groupId>
             <artifactId>file</artifactId>
-            <version>${file.version}-SNAPSHOT</version>
+            <version>${file.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.github.wzc789376152</groupId>
             <artifactId>ftp-file-manager</artifactId>
-            <version>${ftpfilemanager.version}-SNAPSHOT</version>
+            <version>${ftpfilemanager.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.github.wzc789376152</groupId>
             <artifactId>smb-file-manager</artifactId>
-            <version>${smbfilemanager.version}-SNAPSHOT</version>
+            <version>${smbfilemanager.version}</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

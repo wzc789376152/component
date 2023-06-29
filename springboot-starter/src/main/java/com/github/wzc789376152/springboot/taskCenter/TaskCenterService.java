@@ -7,8 +7,10 @@ import com.alibaba.excel.support.ExcelTypeEnum;
 import com.alibaba.excel.write.metadata.WriteSheet;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.ttl.threadpool.TtlExecutors;
+import com.github.wzc789376152.file.service.IFileService;
 import com.github.wzc789376152.springboot.config.SpringContextUtil;
 import com.github.wzc789376152.springboot.config.init.InitPropertice;
+import com.github.wzc789376152.springboot.config.oss.AliyunOssConfig;
 import com.github.wzc789376152.springboot.config.oss.AliyunOssService;
 import com.github.wzc789376152.springboot.taskCenter.entity.Taskcenter;
 import com.github.wzc789376152.springboot.taskCenter.mapper.TaskcenterMapper;
@@ -20,10 +22,7 @@ import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -201,20 +200,20 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
                 WriteSheet orderSheet = EasyExcel.writerSheet(0, title).head(resultList.get(0).getClass()).build();
                 writer.write(resultList, orderSheet);
                 writer.finish();
-                AliyunOssService aliyunOssService = SpringContextUtil.getBean(AliyunOssService.class);
-                if (aliyunOssService != null) {
-                    url = aliyunOssService.upload(byteArrayOutputStream.toByteArray(), title + ExcelTypeEnum.XLSX.getValue());
+                String fileName = title + ExcelTypeEnum.XLSX.getValue();
+                AliyunOssConfig aliyunOssConfig = SpringContextUtil.getBean(AliyunOssConfig.class);
+                if (aliyunOssConfig.getEnable()) {
+                    AliyunOssService aliyunOssService = SpringContextUtil.getBean(AliyunOssService.class);
+                    url = aliyunOssService.upload(byteArrayOutputStream.toByteArray(), fileName);
                     if (!url.startsWith("http")) {
                         url = "https://" + url;
                     }
                 } else {
-                    File file = new File("excel/" + title + ExcelTypeEnum.XLSX.getValue());
-                    if (!file.getParentFile().exists()) {
-                        file.mkdirs();
-                    }
-                    FileOutputStream fileOutputStream = new FileOutputStream(file);
-                    fileOutputStream.write(byteArrayOutputStream.toByteArray());
-                    url = "excel/" + title + ExcelTypeEnum.XLSX.getValue();
+                    IFileService fileService = SpringContextUtil.getBean(IFileService.class);
+                    InputStream inputStream = new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
+                    fileService.uploadCache(inputStream, "excel/" + fileName);
+                    fileService.submit("excel/" + fileName);
+                    url = fileName;
                 }
             }
             Taskcenter taskcenter1 = new Taskcenter();
