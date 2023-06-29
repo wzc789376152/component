@@ -17,13 +17,13 @@
     </description>
     <url>https://github.com/wzc789376152/component/tree/master/file</url>
     <properties>
-        <project.release.version>${file.version}-SNAPSHOT</project.release.version>
+        <project.release.version>${file.version}</project.release.version>
     </properties>
     <profiles>
         <profile>
-            <id>product</id>
+            <id>snapshot</id>
             <properties>
-                <project.release.version>${file.version}</project.release.version>
+                <project.release.version>${file.version}-SNAPSHOT</project.release.version>
             </properties>
         </profile>
     </profiles>

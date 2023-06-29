@@ -14,9 +14,9 @@
     </properties>
     <profiles>
         <profile>
-            <id>product</id>
+            <id>snapshot</id>
             <properties>
-                <project.release.version>${filespringbootstarter.version}</project.release.version>
+                <project.release.version>${filespringbootstarter.version}-SNAPSHOT</project.release.version>
             </properties>
         </profile>
     </profiles>

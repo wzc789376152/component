@@ -19,15 +19,15 @@
         <module>serverchan</module>
     </modules>
     <properties>
-        <common.version>1.0.1</common.version>
-        <springbootstarter.version>1.0.1</springbootstarter.version>
-        <file.version>2.0.1</file.version>
-        <filespringbootstarter.version>2.0.1</filespringbootstarter.version>
-        <filespringmvc.version>2.0.1</filespringmvc.version>
-        <ftpfilemanager.version>2.0.1</ftpfilemanager.version>
-        <smbfilemanager.version>2.0.1</smbfilemanager.version>
-        <shirospringbootstarter.version>2.0.2</shirospringbootstarter.version>
-        <serverchan.version>2.0.1</serverchan.version>
+        <common.version>1.0.2</common.version>
+        <springbootstarter.version>1.0.3</springbootstarter.version>
+        <file.version>2.0.2</file.version>
+        <filespringbootstarter.version>2.0.2</filespringbootstarter.version>
+        <filespringmvc.version>2.0.2</filespringmvc.version>
+        <ftpfilemanager.version>2.0.2</ftpfilemanager.version>
+        <smbfilemanager.version>2.0.2</smbfilemanager.version>
+        <shirospringbootstarter.version>2.0.3</shirospringbootstarter.version>
+        <serverchan.version>2.0.2</serverchan.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>

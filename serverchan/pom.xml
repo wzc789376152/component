@@ -18,29 +18,29 @@
     </description>
     <url>https://github.com/wzc789376152/component/tree/master/file</url>
     <properties>
-        <project.release.version>${serverchan.version}-SNAPSHOT</project.release.version>
+        <project.release.version>${serverchan.version}</project.release.version>
     </properties>
     <profiles>
         <profile>
-            <id>product</id>
+            <id>snapshot</id>
             <properties>
-                <project.release.version>${serverchan.version}</project.release.version>
+                <project.release.version>${serverchan.version}-SNAPSHOT</project.release.version>
             </properties>
         </profile>
     </profiles>
     <build>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>2.0.0.RELEASE</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
+                <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <archive>
-                        <addMavenDescriptor>false</addMavenDescriptor>
-                    </archive>
+                    <source>8</source>
+                    <target>8</target>
                 </configuration>
             </plugin>
         </plugins>
