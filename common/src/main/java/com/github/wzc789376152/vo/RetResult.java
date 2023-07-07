@@ -15,7 +15,7 @@ public class RetResult<T> implements Serializable, Cloneable {
     // 请求流水号
     private String requestId = UUID.randomUUID().toString().replace("-", "");
 
-    public String code;
+    public Integer code;
 
     private String message;
 
@@ -24,19 +24,19 @@ public class RetResult<T> implements Serializable, Cloneable {
     public RetResult() {
     }
 
-    public RetResult(String code, String msg, T data) {
+    public RetResult(Integer code, String msg, T data) {
         this.code = code;
         this.message = msg;
         this.data = data;
     }
 
-    public RetResult(String code, T data) {
+    public RetResult(Integer code, T data) {
         this.data = data;
         this.code = code;
     }
 
     public static <T> RetResult<T> success() {
-        return new RetResult<>("200", null);
+        return new RetResult<>(200, null);
     }
 
 
@@ -47,10 +47,10 @@ public class RetResult<T> implements Serializable, Cloneable {
     }
 
     public static <T> RetResult<T> failed(T data) {
-        return new RetResult<>("500", data);
+        return new RetResult<>(500, data);
     }
 
-    public static <T> RetResult<T> failed(String code, String msg, T data) {
+    public static <T> RetResult<T> failed(Integer code, String msg, T data) {
         return new RetResult<>(code, msg, data);
     }
 

@@ -7,7 +7,7 @@ import lombok.Getter;
 public class BizRuntimeException extends  RuntimeException{
 
     @Getter
-    private String errorCode;
+    private Integer errorCode;
 
     @Getter
     private String errorMiniCode;
@@ -20,7 +20,7 @@ public class BizRuntimeException extends  RuntimeException{
         super(message);
     }
 
-    public BizRuntimeException(String errorCode, String errorMiniCode,String errorMsg) {
+    public BizRuntimeException(Integer errorCode, String errorMiniCode,String errorMsg) {
         super(errorMsg);
         this.errorCode = errorCode;
         this.errorMiniCode = errorMiniCode;

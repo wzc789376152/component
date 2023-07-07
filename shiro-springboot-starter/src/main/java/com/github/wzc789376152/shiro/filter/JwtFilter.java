@@ -90,13 +90,13 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
             responseError(response, 402, "token已过期");
             return false;
         }
-        if (IpUtil.checkIp(shiroJwtProperty.getIpWhileList())) {
-            return true;
-        }
         if (isLogin) {
             UserInfo userInfo = (UserInfo) SecurityUtils.getSubject().getPrincipal();
             userInfo.setToken(token);
             TokenUtils.setUserInfo(userInfo);
+            return true;
+        }
+        if (IpUtil.checkIp(shiroJwtProperty.getIpWhileList())) {
             return true;
         }
         responseError(response, 401, "用户未登录");

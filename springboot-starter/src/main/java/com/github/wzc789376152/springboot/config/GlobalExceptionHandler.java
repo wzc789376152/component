@@ -5,6 +5,7 @@ import com.github.wzc789376152.exception.BizRuntimeException;
 import com.github.wzc789376152.exception.SystemException;
 import com.github.wzc789376152.vo.RetResult;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
@@ -33,7 +34,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(value = DuplicateKeyException.class)
     public RetResult<Object> exception(DuplicateKeyException e) {
         log.error("唯一索引异常", e);
-        return RetResult.failed("500", "记录已存在，无法重复添加", null);
+        return RetResult.failed(500, "记录已存在，无法重复添加", null);
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -41,7 +42,7 @@ public class GlobalExceptionHandler {
     public RetResult<Object> exception(MissingServletRequestParameterException e) {
         String format = MessageFormat.format("参数 {0} 类型 {1} 解析失败", e.getParameterName(), e.getParameterType());
         log.error(format, e);
-        return RetResult.failed("500", format, null);
+        return RetResult.failed(500, format, null);
     }
 
     @ExceptionHandler(value = BindException.class)
@@ -59,7 +60,7 @@ public class GlobalExceptionHandler {
             builder.append(message).append("\n");
         }
         log.error(builder.toString(), exception);
-        return RetResult.failed("400", builder.toString(), null);
+        return RetResult.failed(400, builder.toString(), null);
     }
 
     /**
@@ -71,7 +72,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(value = ConstraintViolationException.class)
     public RetResult<Object> exception(ConstraintViolationException exception) {
         log.error(exception.getMessage(), exception);
-        return RetResult.failed("500", exception.getMessage(), null);
+        return RetResult.failed(500, exception.getMessage(), null);
     }
 
     /**
@@ -83,13 +84,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(value = BizRuntimeException.class)
     public RetResult<Object> exception(BizRuntimeException exception) {
         log.error(exception.getMessage(), exception);
-        return RetResult.failed(StringUtils.isNotEmpty(exception.getErrorCode()) ? exception.getErrorCode() : "500", exception.getMessage(), null);
+        return RetResult.failed(ObjectUtils.isNotEmpty(exception.getErrorCode()) ? exception.getErrorCode() : 500, exception.getMessage(), null);
     }
 
     @ExceptionHandler(value = HttpMessageNotReadableException.class)
     public RetResult<Object> exception(HttpMessageNotReadableException exception) {
         log.error(exception.getMessage(), exception);
-        return RetResult.failed("400", "请输入正确数据格式", null);
+        return RetResult.failed(400, "请输入正确数据格式", null);
     }
 
     @ExceptionHandler(value = {SystemException.class, Exception.class})
@@ -98,6 +99,6 @@ public class GlobalExceptionHandler {
         if (exception.getCause() != null && exception.getCause() instanceof BizRuntimeException) {
             return exception((BizRuntimeException) exception.getCause());
         }
-        return RetResult.failed("500", SystemException.SYSTEM_ERROR_MSG, null);
+        return RetResult.failed(500, SystemException.SYSTEM_ERROR_MSG, null);
     }
 }
