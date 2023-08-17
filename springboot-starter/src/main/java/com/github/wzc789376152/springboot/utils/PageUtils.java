@@ -2,10 +2,11 @@ package com.github.wzc789376152.springboot.utils;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.ReflectUtil;
+import com.alibaba.ttl.threadpool.TtlExecutors;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
-import com.github.wzc789376152.springboot.config.SpringContextUtil;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +14,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
 
 public class PageUtils {
     private final Integer pageNum;
@@ -44,7 +46,14 @@ public class PageUtils {
         if (pageSize == 0) {
             this.count = false;
         }
-        executorService = SpringContextUtil.getBean("pageResultAsync", ExecutorService.class);
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(4);
+        executor.setMaxPoolSize(8);
+        executor.setQueueCapacity(1000);
+        executor.setThreadNamePrefix("pageResult-handle-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.initialize();
+        executorService = TtlExecutors.getTtlExecutorService(executor.getThreadPoolExecutor());
     }
 
     public PageUtils count(Boolean count) {
@@ -112,6 +121,7 @@ public class PageUtils {
                 throw new RuntimeException(e);
             }
         }
+        executorService.shutdown();
         return PageInfo.of(toPage);
     }
 
@@ -130,6 +140,7 @@ public class PageUtils {
                 throw new RuntimeException(e);
             }
         }
+        executorService.shutdown();
         return PageInfo.of(toPage);
     }
 }
