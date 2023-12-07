@@ -17,6 +17,7 @@ public class FeignConfiguration implements RequestInterceptor {
 
     @Override
     public void apply(RequestTemplate requestTemplate) {
+        setHeader(requestTemplate, "FeignResultFormat", true);
         UserInfo userInfo = TokenUtils.getCurrentUser();
         if (userInfo != null) {
             setToken(requestTemplate, userInfo.getToken());

@@ -42,18 +42,20 @@ public abstract class CommonResponseAdvice implements ResponseBodyAdvice<Object>
 
     @Override
     public Object beforeBodyWrite(Object o, MethodParameter methodParameter, MediaType mediaType, Class aClass, ServerHttpRequest serverHttpRequest, ServerHttpResponse serverHttpResponse) {
-        NoResultFormatter noResultFormatter = AnnotationUtils.findAnnotation(Objects.requireNonNull(methodParameter.getMethod()), NoResultFormatter.class);
-        if (noResultFormatter == null) {
-            if (!(o instanceof RetResult)) {
-                RetResult<Object> retResult = RetResult.success(o);
-                ApiOperation apiOperation = AnnotationUtils.findAnnotation(Objects.requireNonNull(methodParameter.getMethod()), ApiOperation.class);
-                if (apiOperation != null) {
-                    retResult.setMessage(apiOperation.value() + "成功");
+        List<String> headerList = serverHttpRequest.getHeaders().get("FeignResultFormat");
+        if (headerList == null || !headerList.get(0).equals("true")) {
+            NoResultFormatter noResultFormatter = AnnotationUtils.findAnnotation(Objects.requireNonNull(methodParameter.getMethod()), NoResultFormatter.class);
+            if (noResultFormatter == null) {
+                if (!(o instanceof RetResult)) {
+                    RetResult<Object> retResult = RetResult.success(o);
+                    ApiOperation apiOperation = AnnotationUtils.findAnnotation(Objects.requireNonNull(methodParameter.getMethod()), ApiOperation.class);
+                    if (apiOperation != null) {
+                        retResult.setMessage(apiOperation.value() + "成功");
+                    }
+                    o = retResult;
                 }
-                o = retResult;
             }
         }
-
         if (mediaType.equals(MediaType.APPLICATION_JSON)) {
             return o;
         }
