@@ -133,6 +133,7 @@ public abstract class CommonResponseAdvice implements ResponseBodyAdvice<Object>
 
     @ExceptionHandler({FeignException.class})
     public RetResult<Object> exception(FeignException exception, HttpServletResponse response) {
+        log.error(exception.getMessage(), exception);
         response.setStatus(exception.status());
         String message = exception.getMessage();
         if (message.contains("[{")) {
