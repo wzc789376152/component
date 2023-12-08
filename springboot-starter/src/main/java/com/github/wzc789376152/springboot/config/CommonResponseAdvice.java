@@ -3,6 +3,7 @@ package com.github.wzc789376152.springboot.config;
 
 import com.github.wzc789376152.exception.BizRuntimeException;
 import com.github.wzc789376152.exception.SystemException;
+import com.github.wzc789376152.service.IResponseService;
 import com.github.wzc789376152.springboot.annotation.NoResultFormatter;
 import com.github.wzc789376152.utils.JSONUtils;
 import com.github.wzc789376152.vo.RetResult;
@@ -10,6 +11,8 @@ import feign.FeignException;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.poi.ss.formula.functions.T;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.dao.DuplicateKeyException;
@@ -34,6 +37,10 @@ import java.util.Objects;
 
 @Slf4j
 public abstract class CommonResponseAdvice implements ResponseBodyAdvice<Object> {
+
+    @Autowired
+    IResponseService responseService;
+
     @Override
     public boolean supports(MethodParameter methodParameter, Class aClass) {
         return true;
@@ -46,13 +53,13 @@ public abstract class CommonResponseAdvice implements ResponseBodyAdvice<Object>
         if (headerList == null || !headerList.get(0).equals("true")) {
             NoResultFormatter noResultFormatter = AnnotationUtils.findAnnotation(Objects.requireNonNull(methodParameter.getMethod()), NoResultFormatter.class);
             if (noResultFormatter == null) {
-                if (!(o instanceof RetResult)) {
-                    RetResult<Object> retResult = RetResult.success(o);
+                if (!o.getClass().getName().equals(responseService.getResultClass().getName())) {
                     ApiOperation apiOperation = AnnotationUtils.findAnnotation(Objects.requireNonNull(methodParameter.getMethod()), ApiOperation.class);
                     if (apiOperation != null) {
-                        retResult.setMessage(apiOperation.value() + "成功");
+                        o = responseService.success(o, apiOperation.value() + "成功");
+                    } else {
+                        o = responseService.success(o, "");
                     }
-                    o = retResult;
                 }
             }
         }
@@ -64,22 +71,22 @@ public abstract class CommonResponseAdvice implements ResponseBodyAdvice<Object>
 
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler(value = DuplicateKeyException.class)
-    public RetResult<Object> exception(DuplicateKeyException e) {
+    public Object exception(DuplicateKeyException e) {
         log.error("唯一索引异常", e);
-        return RetResult.failed(500, "记录已存在，无法重复添加", null);
+        return error(500, "记录已存在，无法重复添加");
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(value = MissingServletRequestParameterException.class)
-    public RetResult<Object> exception(MissingServletRequestParameterException e) {
+    public Object exception(MissingServletRequestParameterException e) {
         String format = MessageFormat.format("参数 {0} 类型 {1} 解析失败", e.getParameterName(), e.getParameterType());
         log.error(format, e);
-        return RetResult.failed(400, format, null);
+        return error(400, format);
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(value = BindException.class)
-    public RetResult<Object> exception(BindException exception, HttpServletResponse response) {
+    public Object exception(BindException exception, HttpServletResponse response) {
         BindingResult result = exception.getBindingResult();
         final List<FieldError> fieldErrors = result.getFieldErrors();
         StringBuilder builder = new StringBuilder();
@@ -94,7 +101,7 @@ public abstract class CommonResponseAdvice implements ResponseBodyAdvice<Object>
         }
         log.error(builder.toString(), exception);
         response.setStatus(400);
-        return RetResult.failed(400, builder.toString(), null);
+        return error(400, builder.toString());
     }
 
     /**
@@ -105,10 +112,10 @@ public abstract class CommonResponseAdvice implements ResponseBodyAdvice<Object>
      */
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(value = ConstraintViolationException.class)
-    public RetResult<Object> exception(ConstraintViolationException exception, HttpServletResponse response) {
+    public Object exception(ConstraintViolationException exception, HttpServletResponse response) {
         log.error(exception.getMessage(), exception);
         response.setStatus(400);
-        return RetResult.failed(400, exception.getMessage(), null);
+        return error(400, exception.getMessage());
     }
 
     /**
@@ -119,42 +126,45 @@ public abstract class CommonResponseAdvice implements ResponseBodyAdvice<Object>
      */
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler(value = BizRuntimeException.class)
-    public RetResult<Object> exception(BizRuntimeException exception, HttpServletResponse response) {
+    public Object exception(BizRuntimeException exception, HttpServletResponse response) {
         log.error(exception.getMessage(), exception);
         response.setStatus(500);
-        return RetResult.failed(ObjectUtils.isNotEmpty(exception.getErrorCode()) ? exception.getErrorCode() : 500, exception.getMessage(), null);
+        return error(ObjectUtils.isNotEmpty(exception.getErrorCode()) ? exception.getErrorCode() : 500, exception.getMessage());
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(value = HttpMessageNotReadableException.class)
-    public RetResult<Object> exception(HttpMessageNotReadableException exception, HttpServletResponse response) {
+    public Object exception(HttpMessageNotReadableException exception, HttpServletResponse response) {
         log.error(exception.getMessage(), exception);
         response.setStatus(400);
-        return RetResult.failed(400, "请输入正确数据格式", null);
+        return error(400, "请输入正确数据格式");
     }
 
     @ExceptionHandler({FeignException.class})
-    public RetResult<Object> exception(FeignException exception, HttpServletResponse response) {
+    public Object exception(FeignException exception, HttpServletResponse response) {
         log.error(exception.getMessage(), exception);
         response.setStatus(exception.status());
         String message = exception.getMessage();
         if (message.contains("[{")) {
             message = message.substring(message.lastIndexOf("[{") + 1, message.lastIndexOf("}]") + 1);
-            RetResult result = JSONUtils.parse(message, RetResult.class);
-            return result;
+            return JSONUtils.parse(message, responseService.getResultClass());
         } else if (message.contains("\"]")) {
             message = message.substring(message.lastIndexOf("[\"") + 2, message.lastIndexOf("\"]"));
         }
-        return RetResult.failed(exception.status(), message, (Object) null);
+        return error(exception.status(), message);
     }
 
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    @ExceptionHandler(value = {SystemException.class, Exception.class})
-    public RetResult<Object> exception(Exception exception) {
+    @ExceptionHandler(value = {Exception.class})
+    public Object exception(Exception exception) {
         log.error(exception.getMessage(), exception);
         if (exception.getCause() != null && exception.getCause() instanceof BizRuntimeException) {
             return exception((BizRuntimeException) exception.getCause());
         }
-        return RetResult.failed(500, SystemException.SYSTEM_ERROR_MSG, null);
+        return error(500, SystemException.SYSTEM_ERROR_MSG);
+    }
+
+    protected Object error(Integer code, String msg) {
+        return responseService.error(code, msg);
     }
 }

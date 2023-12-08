@@ -46,6 +46,13 @@ public class RetResult<T> implements Serializable, Cloneable {
         return result;
     }
 
+    public static <T> RetResult<T> success(T data, String message) {
+        RetResult<T> result = RetResult.success();
+        result.setData(data);
+        result.setMessage(message);
+        return result;
+    }
+
     public static <T> RetResult<T> failed(T data) {
         return new RetResult<>(500, data);
     }

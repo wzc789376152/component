@@ -1,5 +1,7 @@
 package com.github.wzc789376152.shiro.config;
 
+import com.github.wzc789376152.service.IResponseService;
+import com.github.wzc789376152.service.impl.ResponseServiceImpl;
 import com.github.wzc789376152.shiro.exception.GlobalExceptionResolver;
 import com.github.wzc789376152.shiro.filter.JwtFilter;
 import com.github.wzc789376152.shiro.properties.ShiroJwtProperty;
@@ -26,9 +28,11 @@ import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
 import org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import javax.annotation.Resource;
@@ -127,7 +131,7 @@ public class ShiroConfiguration {
         Map<String, String> filterChainDefinitionManager = new LinkedHashMap<String, String>();
         Map<String, Filter> filter = new LinkedHashMap<>(1);
         if (shiroJwtProperty != null && shiroJwtProperty.getEnable()) {
-            filter.put("jwt", new JwtFilter(shiroJwtProperty, shiroProperty));
+            filter.put("jwt", new JwtFilter(shiroJwtProperty, shiroProperty, getResponseService()));
         }
         if (shiroProperty.getUrlPers() != null && shiroProperty.getUrlPers().size() > 0) {
             for (int i = 0; i < shiroProperty.getUrlPers().size(); i++) {
@@ -143,6 +147,7 @@ public class ShiroConfiguration {
 
         return shiroFilterFactoryBean;
     }
+
     @Bean
     public DefaultAdvisorAutoProxyCreator defaultAdvisorAutoProxyCreator() {
         DefaultAdvisorAutoProxyCreator proxyCreator = new DefaultAdvisorAutoProxyCreator();
@@ -162,4 +167,9 @@ public class ShiroConfiguration {
         return new GlobalExceptionResolver();
     }
 
+    @Bean
+    @ConditionalOnMissingBean
+    public IResponseService getResponseService() {
+        return new ResponseServiceImpl();
+    }
 }

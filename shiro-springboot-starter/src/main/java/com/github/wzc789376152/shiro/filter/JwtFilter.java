@@ -1,10 +1,12 @@
 package com.github.wzc789376152.shiro.filter;
 
 import com.auth0.jwt.exceptions.TokenExpiredException;
+import com.github.wzc789376152.service.IResponseService;
 import com.github.wzc789376152.shiro.properties.ShiroJwtProperty;
 import com.github.wzc789376152.shiro.properties.ShiroProperty;
 import com.github.wzc789376152.shiro.token.JwtToken;
 import com.github.wzc789376152.utils.IpUtil;
+import com.github.wzc789376152.utils.JSONUtils;
 import com.github.wzc789376152.utils.TokenUtils;
 import com.github.wzc789376152.vo.UserInfo;
 import org.apache.shiro.SecurityUtils;
@@ -20,6 +22,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 
@@ -28,10 +31,12 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
 
     ShiroJwtProperty shiroJwtProperty;
     ShiroProperty shiroProperty;
+    IResponseService responseService;
 
-    public JwtFilter(ShiroJwtProperty shiroJwtProperty, ShiroProperty shiroProperty) {
+    public JwtFilter(ShiroJwtProperty shiroJwtProperty, ShiroProperty shiroProperty, IResponseService responseService) {
         this.shiroJwtProperty = shiroJwtProperty;
         this.shiroProperty = shiroProperty;
+        this.responseService = responseService;
     }
 
     /**
@@ -121,7 +126,7 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
         OutputStream out = null;
         try {
             out = response.getOutputStream();
-            out.write(message.getBytes());
+            out.write(JSONUtils.toJSONString(responseService.error(status, message)).getBytes(StandardCharsets.UTF_8));
             out.flush();
             out.close();
         } catch (IOException e) {

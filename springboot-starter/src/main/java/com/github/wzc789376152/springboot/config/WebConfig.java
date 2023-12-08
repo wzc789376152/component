@@ -7,12 +7,17 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import com.github.wzc789376152.service.IResponseService;
+import com.github.wzc789376152.service.impl.ResponseServiceImpl;
 import com.github.wzc789376152.springboot.annotation.AppRestController;
 import com.github.wzc789376152.springboot.annotation.OpenRestController;
 import com.github.wzc789376152.utils.DateUtils;
 import io.netty.util.internal.StringUtil;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.http.converter.HttpMessageConverter;
@@ -69,6 +74,12 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addFormatters(FormatterRegistry registry) {
         registry.addConverter(new DateConvert());
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public IResponseService getResponseService() {
+        return new ResponseServiceImpl();
     }
 
     public static class DateConvert implements Converter<String, Date> {
