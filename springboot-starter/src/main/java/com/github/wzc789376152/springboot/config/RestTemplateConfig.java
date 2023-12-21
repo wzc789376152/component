@@ -45,6 +45,7 @@ public class RestTemplateConfig {
             if (userInfo != null) {
                 setToken(request, userInfo.getToken());
             }
+            request.getHeaders().set("FeignResultFormat","true");
             return execution.execute(request, body);
         }
 
