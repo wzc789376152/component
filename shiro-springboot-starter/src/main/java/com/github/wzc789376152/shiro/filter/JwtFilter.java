@@ -96,7 +96,7 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
             return false;
         }
         if (isLogin) {
-            UserInfo userInfo = (UserInfo) getSubject(request, response);
+            UserInfo userInfo = (UserInfo) getSubject(request, response).getPrincipal();
             userInfo.setToken(token);
             TokenUtils.setUserInfo(userInfo);
             return true;
