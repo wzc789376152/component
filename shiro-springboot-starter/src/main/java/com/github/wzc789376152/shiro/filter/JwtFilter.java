@@ -96,7 +96,7 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
             return false;
         }
         if (isLogin) {
-            UserInfo userInfo = (UserInfo) SecurityUtils.getSubject().getPrincipal();
+            UserInfo userInfo = (UserInfo) getSubject(request, response);
             userInfo.setToken(token);
             TokenUtils.setUserInfo(userInfo);
             return true;
@@ -114,6 +114,11 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
     @Override
     protected boolean preHandle(ServletRequest request, ServletResponse response) throws Exception {
         return super.preHandle(request, response);
+    }
+
+    @Override
+    public void afterCompletion(ServletRequest request, ServletResponse response, Exception exception) throws Exception {
+        TokenUtils.remove();
     }
 
     /**

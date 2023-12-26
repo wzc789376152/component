@@ -10,7 +10,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <properties>
-        <project.release.version>2.1.0</project.release.version>
+        <project.release.version>2.1.1</project.release.version>
     </properties>
     <profiles>
         <profile>
