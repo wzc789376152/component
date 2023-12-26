@@ -10,6 +10,7 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.github.wzc789376152.shiro.properties.ShiroJwtProperty;
 import com.github.wzc789376152.shiro.service.IJwtService;
 import com.github.wzc789376152.shiro.token.JwtTokenResult;
+import com.github.wzc789376152.utils.JSONUtils;
 import com.github.wzc789376152.vo.UserInfo;
 
 import java.util.Date;
@@ -66,5 +67,12 @@ public class JwtServiceImpl implements IJwtService {
         } else {
             throw new TokenExpiredException("token已失效");
         }
+    }
+
+    @Override
+    public UserInfo getUserInfo(String token) {
+        DecodedJWT jwt = JWT.decode(token);
+        String userInfo = jwt.getClaim("userInfo").asString();
+        return JSONUtils.parse(userInfo, UserInfo.class);
     }
 }

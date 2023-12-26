@@ -58,9 +58,7 @@ public class ShiroJwtRealm extends AuthorizingRealm {
         if (!verify) {
             throw new TokenExpiredException("token已失效");
         }
-        DecodedJWT jwt = JWT.decode(token);
-        String userInfo = jwt.getClaim("userInfo").asString();
-        return new SimpleAuthenticationInfo(JSONObject.parseObject(userInfo, UserInfo.class), token, "Jwt");
+        return new SimpleAuthenticationInfo(jwtService.getUserInfo(token), token, "Jwt");
     }
 
     public void clearAuthenticationInfo() {

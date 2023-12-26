@@ -14,4 +14,6 @@ public interface IJwtService {
     Boolean verify(String token);
 
     JwtTokenResult refresh(String refreshToken);
+
+    UserInfo getUserInfo(String token);
 }
