@@ -3,6 +3,7 @@ package com.github.wzc789376152.vo;
 
 import lombok.Data;
 import org.apache.commons.lang3.SerializationUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -13,7 +14,14 @@ import java.util.UUID;
 public class RetResult<T> implements Serializable, Cloneable {
 
     // 请求流水号
-    private String requestId = UUID.randomUUID().toString().replace("-", "");
+    private String requestId;
+
+    public String getRequestId() {
+        if (StringUtils.isNotEmpty(requestId)) {
+            return requestId;
+        }
+        return UUID.randomUUID().toString().replace("-", "");
+    }
 
     public Integer code;
 
@@ -21,44 +29,49 @@ public class RetResult<T> implements Serializable, Cloneable {
 
     private T data;
 
-    public RetResult() {
-    }
-
-    public RetResult(Integer code, String msg, T data) {
+    public RetResult(String requestId, Integer code, String msg, T data) {
         this.code = code;
         this.message = msg;
         this.data = data;
+        this.requestId = requestId;
     }
 
-    public RetResult(Integer code, T data) {
-        this.data = data;
-        this.code = code;
-    }
 
     public static <T> RetResult<T> success() {
-        return new RetResult<>(200, null);
+        return success(null, null, null);
     }
 
+    public static <T> RetResult<T> success(String uuid, T data) {
+
+        return success(uuid, data, null);
+    }
 
     public static <T> RetResult<T> success(T data) {
-        RetResult<T> result = RetResult.success();
-        result.setData(data);
-        return result;
+        return success(data, null);
     }
 
     public static <T> RetResult<T> success(T data, String message) {
-        RetResult<T> result = RetResult.success();
-        result.setData(data);
-        result.setMessage(message);
-        return result;
+        return success(null, data, message);
     }
 
-    public static <T> RetResult<T> failed(T data) {
-        return new RetResult<>(500, data);
+    public static <T> RetResult<T> success(String uuid, T data, String message) {
+        return new RetResult<>(uuid, 200, message, data);
+    }
+
+    public static <T> RetResult<T> failed(String msg) {
+        return failed(null, 500, msg, null);
+    }
+
+    public static <T> RetResult<T> failed(String uuid, T data) {
+        return failed(uuid, 500, null, data);
     }
 
     public static <T> RetResult<T> failed(Integer code, String msg, T data) {
-        return new RetResult<>(code, msg, data);
+        return failed(null, code, msg, data);
+    }
+
+    public static <T> RetResult<T> failed(String uuid, Integer code, String msg, T data) {
+        return new RetResult<>(uuid, code, msg, data);
     }
 
     @Override

@@ -12,6 +12,7 @@ import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.poi.ss.formula.functions.T;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.annotation.AnnotationUtils;
@@ -50,15 +51,16 @@ public abstract class CommonResponseAdvice implements ResponseBodyAdvice<Object>
     @Override
     public Object beforeBodyWrite(Object o, MethodParameter methodParameter, MediaType mediaType, Class aClass, ServerHttpRequest serverHttpRequest, ServerHttpResponse serverHttpResponse) {
         List<String> headerList = serverHttpRequest.getHeaders().get("FeignResultFormat");
+        String traceId = MDC.get("traceId");
         if (headerList == null || !headerList.get(0).equals("true")) {
             NoResultFormatter noResultFormatter = AnnotationUtils.findAnnotation(Objects.requireNonNull(methodParameter.getMethod()), NoResultFormatter.class);
             if (noResultFormatter == null) {
                 if (!o.getClass().getName().equals(responseService.getResultClass().getName())) {
                     ApiOperation apiOperation = AnnotationUtils.findAnnotation(Objects.requireNonNull(methodParameter.getMethod()), ApiOperation.class);
                     if (apiOperation != null) {
-                        o = responseService.success(o, apiOperation.value() + "成功");
+                        o = responseService.success(traceId, o, apiOperation.value() + "成功");
                     } else {
-                        o = responseService.success(o, "");
+                        o = responseService.success(traceId, o, "");
                     }
                 }
             }

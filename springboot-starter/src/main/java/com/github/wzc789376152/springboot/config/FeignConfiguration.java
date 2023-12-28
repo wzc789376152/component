@@ -5,6 +5,7 @@ import com.github.wzc789376152.utils.TokenUtils;
 import com.github.wzc789376152.vo.UserInfo;
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
+import org.slf4j.MDC;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.Configuration;
 
@@ -18,6 +19,7 @@ public class FeignConfiguration implements RequestInterceptor {
     @Override
     public void apply(RequestTemplate requestTemplate) {
         setHeader(requestTemplate, "FeignResultFormat", true);
+        setHeader(requestTemplate, "traceId", MDC.get("traceId"));
         UserInfo userInfo = TokenUtils.getCurrentUser();
         if (userInfo != null) {
             setToken(requestTemplate, userInfo.getToken());

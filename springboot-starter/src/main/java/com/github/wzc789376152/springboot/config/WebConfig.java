@@ -13,6 +13,8 @@ import com.github.wzc789376152.springboot.annotation.AppRestController;
 import com.github.wzc789376152.springboot.annotation.OpenRestController;
 import com.github.wzc789376152.utils.DateUtils;
 import io.netty.util.internal.StringUtil;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -22,14 +24,19 @@ import org.springframework.core.convert.converter.Converter;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
@@ -70,6 +77,28 @@ public class WebConfig implements WebMvcConfigurer {
         configurer.addPathPrefix("/v", cls -> cls.isAnnotationPresent(OpenRestController.class));
     }
 
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(new RequestInterceptor());
+    }
+
+    public static class RequestInterceptor implements HandlerInterceptor {
+
+        @Override
+        public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+            String traceId = request.getHeader("traceId");
+            if (StringUtils.isEmpty(traceId)) {
+                traceId = UUID.randomUUID().toString().replace("-", "");
+            }
+            MDC.put("traceId", traceId);
+            return true;
+        }
+
+        @Override
+        public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+            MDC.remove("traceId");
+        }
+    }
 
     @Override
     public void addFormatters(FormatterRegistry registry) {
