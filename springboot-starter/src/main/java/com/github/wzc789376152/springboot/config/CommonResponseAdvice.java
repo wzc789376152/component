@@ -68,7 +68,10 @@ public abstract class CommonResponseAdvice implements ResponseBodyAdvice<Object>
         if (mediaType.equals(MediaType.APPLICATION_JSON)) {
             return o;
         }
-        return JSONUtils.toJSONString(o);
+        if (o.getClass().getName().equals(responseService.getResultClass().getName())) {
+            return JSONUtils.parse(o, String.class);
+        }
+        return o;
     }
 
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)

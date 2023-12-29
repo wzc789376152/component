@@ -22,7 +22,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.format.FormatterRegistry;
+import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -34,6 +36,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -52,9 +55,15 @@ public class WebConfig implements WebMvcConfigurer {
      */
     @Override
     public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
+        //字符串转换器
+        List<MediaType> listString = new ArrayList<>();
+        //字符串的消息类型为text/plain
+        listString.add(MediaType.TEXT_PLAIN);
+        StringHttpMessageConverter stringHttpMessageConverter = new StringHttpMessageConverter();
+        stringHttpMessageConverter.setSupportedMediaTypes(listString);
+        // 生成JSON时,将所有Long转换成String
         MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
         ObjectMapper objectMapper = converter.getObjectMapper();
-        // 生成JSON时,将所有Long转换成String
         SimpleModule simpleModule = new SimpleModule();
         simpleModule.addSerializer(Long.class, ToStringSerializer.instance);
         simpleModule.addSerializer(Long.TYPE, ToStringSerializer.instance);
@@ -67,8 +76,12 @@ public class WebConfig implements WebMvcConfigurer {
         objectMapper.setDateFormat(new SimpleDateFormat(dateFormat));
         // 设置格式化内容
         converter.setObjectMapper(objectMapper);
+        //json转换器
+        List<MediaType> list = new ArrayList<>();
+        list.add(MediaType.APPLICATION_JSON);
+        converter.setSupportedMediaTypes(list);
         converters.add(0, converter);
-
+        converters.add(stringHttpMessageConverter);
     }
 
     @Override
