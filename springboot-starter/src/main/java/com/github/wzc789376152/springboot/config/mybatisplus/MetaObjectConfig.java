@@ -111,7 +111,7 @@ public class MetaObjectConfig implements MetaObjectHandler {
                     return Integer.parseInt(value.toString());
                 }
                 if (typeName.equals(String.class.getName())) {
-                    return JSONUtils.toJSONString(value);
+                    return JSONUtils.parse(value,String.class);
                 }
             }
         } catch (Exception e) {
