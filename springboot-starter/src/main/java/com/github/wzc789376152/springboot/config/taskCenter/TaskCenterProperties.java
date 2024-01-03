@@ -8,4 +8,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class TaskCenterProperties {
     private Boolean enable = false;
     private Boolean initTable = false;
+    private Boolean scheduled = false;
 }

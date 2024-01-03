@@ -12,6 +12,8 @@ import com.github.wzc789376152.springboot.config.SpringContextUtil;
 import com.github.wzc789376152.springboot.config.init.InitPropertice;
 import com.github.wzc789376152.springboot.config.oss.AliyunOssConfig;
 import com.github.wzc789376152.springboot.config.oss.AliyunOssService;
+import com.github.wzc789376152.springboot.taskCenter.dto.TaskCenterInitDto;
+import com.github.wzc789376152.springboot.taskCenter.dto.TaskCenterUpdateDto;
 import com.github.wzc789376152.springboot.taskCenter.entity.Taskcenter;
 import com.github.wzc789376152.springboot.taskCenter.mapper.TaskcenterMapper;
 import com.github.wzc789376152.utils.ClassUtil;
@@ -42,9 +44,13 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
 
     private final Method callbackFunc;
 
-    private final TaskcenterMapper taskcenterMapper;
+//    private final TaskcenterMapper taskcenterMapper;
 
-    public TaskCenterService(T service, String funcName, String callbackFuncName) {
+    private final String runUrl;
+
+    private final ITaskCenterManager taskCenterManager;
+
+    public TaskCenterService(T service, String funcName, String callbackFuncName, String runUrl) {
         this.service = service;
         this.funcName = funcName;
         this.method = ClassUtil.getMethod(service.getClass(), funcName);
@@ -54,11 +60,16 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
         } else {
             this.callbackFunc = null;
         }
-        this.taskcenterMapper = SpringContextUtil.getBean(TaskcenterMapper.class);
+        this.taskCenterManager = SpringContextUtil.getBean(ITaskCenterManager.class);
+        this.runUrl = runUrl;
     }
 
-    public TaskCenterService(String serviceName, String funcName, String callbackFuncName) {
-        this.service = (T) SpringContextUtil.getBean(serviceName.substring(0, 1).toLowerCase() + serviceName.substring(1));
+    public TaskCenterService(String serviceName, String funcName, String callbackFuncName, String runUrl) {
+        try {
+            this.service = (T) SpringContextUtil.getBean(Class.forName(serviceName));
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
         this.funcName = funcName;
         this.method = ClassUtil.getMethod(service.getClass(), funcName);
         this.callbackFuncName = callbackFuncName;
@@ -67,7 +78,8 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
         } else {
             this.callbackFunc = null;
         }
-        this.taskcenterMapper = SpringContextUtil.getBean(TaskcenterMapper.class);
+        this.taskCenterManager = SpringContextUtil.getBean(ITaskCenterManager.class);
+        this.runUrl = runUrl;
     }
 
     @Override
@@ -96,36 +108,30 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
             return;
         }
         String data = JSONUtils.toJSONString(params);
-        if (taskId == null) {//初始化任务
-            log.info("初始化任务:" + title);
-            Taskcenter taskcenter = new Taskcenter();
-            taskcenter.setTitle(title);
-            String serviceName = service.getClass().getSimpleName();
-            if (serviceName.contains("$")) {
-                serviceName = serviceName.split("\\$")[0];
-            }
-            taskcenter.setServiceName(serviceName);
-            taskcenter.setServiceMethod(funcName);
-            taskcenter.setCallbackServiceMethod(callbackFuncName);
-            JSONObject paramObj = new JSONObject();
-            paramObj.put("data", data);
-            paramObj.put("name", params.get(0).getClass().getName());
-            taskcenter.setServiceParam(paramObj.toJSONString());
-            taskcenter.setProgress(0);
-            taskcenter.setStatus(1);
-            taskcenterMapper.insert(taskcenter);
-            taskId = taskcenter.getId();
-        } else {
-            Taskcenter taskcenter = taskcenterMapper.selectById(taskId);
+        if (taskId != null) {
+            Taskcenter taskcenter = taskCenterManager.getTask(taskId);
             if (taskcenter == null || taskcenter.getStatus() == 1) {
                 return;
             }
+        } else {
+            log.info("初始化任务:" + title);
         }
-        Taskcenter taskcenter1 = new Taskcenter();
-        taskcenter1.setId(taskId);
-        taskcenter1.setStatus(1);
-        taskcenter1.setProgress(0);
-        taskcenterMapper.updateById(taskcenter1);
+        String serviceName = service.getClass().getName();
+        if (serviceName.contains("$")) {
+            serviceName = serviceName.split("\\$")[0];
+        }
+        JSONObject paramObj = new JSONObject();
+        paramObj.put("data", data);
+        paramObj.put("name", params.get(0).getClass().getName());
+        TaskCenterInitDto taskCenterInitDto = new TaskCenterInitDto();
+        taskCenterInitDto.setId(taskId);
+        taskCenterInitDto.setTitle(title);
+        taskCenterInitDto.setServiceName(serviceName);
+        taskCenterInitDto.setFuncName(funcName);
+        taskCenterInitDto.setCallbackFuncName(callbackFuncName);
+        taskCenterInitDto.setServiceParam(paramObj.toJSONString());
+        taskCenterInitDto.setRunUrl(runUrl);
+        taskId = taskCenterManager.initTask(taskCenterInitDto);
         ExecutorService executorService = SpringContextUtil.getBean("taskCenterAsync", ExecutorService.class);
         Integer finalTaskId = taskId;
         executorService.submit(() -> run(title, finalTaskId, params.toArray()));
@@ -178,13 +184,13 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
                 int finalCount = count;
                 updateFutureList.add(executorService1.submit(() -> {
                     int process = finalCount * 100 / total;
-                    Taskcenter taskcenter1 = taskcenterMapper.selectById(finalTaskId);
+                    Taskcenter taskcenter1 = taskCenterManager.getTask(finalTaskId);
                     if (taskcenter1.getProgress() < process) {
-                        Taskcenter updateCenter = new Taskcenter();
-                        updateCenter.setId(finalTaskId);
-                        updateCenter.setStatus(1);
-                        updateCenter.setProgress(process);
-                        taskcenterMapper.updateById(updateCenter);
+                        TaskCenterUpdateDto taskCenterUpdateDto = new TaskCenterUpdateDto();
+                        taskCenterUpdateDto.setId(finalTaskId);
+                        taskCenterUpdateDto.setStatus(1);
+                        taskCenterUpdateDto.setProgress(process);
+                        taskCenterManager.updateTask(taskCenterUpdateDto);
                     }
                     return true;
                 }));
@@ -200,38 +206,28 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
                 WriteSheet orderSheet = EasyExcel.writerSheet(0, title).head(resultList.get(0).getClass()).build();
                 writer.write(resultList, orderSheet);
                 writer.finish();
-                String fileName = title + ExcelTypeEnum.XLSX.getValue();
-                AliyunOssConfig aliyunOssConfig = SpringContextUtil.getBean(AliyunOssConfig.class);
-                if (aliyunOssConfig.getEnable()) {
-                    AliyunOssService aliyunOssService = SpringContextUtil.getBean(AliyunOssService.class);
-                    url = aliyunOssService.upload(byteArrayOutputStream.toByteArray(), fileName);
-                    if (!url.startsWith("http")) {
-                        url = "https://" + url;
-                    }
-                } else {
-                    IFileService fileService = SpringContextUtil.getBean(IFileService.class);
-                    InputStream inputStream = new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
-                    fileService.uploadCache(inputStream, "excel/" + fileName);
-                    fileService.submit("excel/" + fileName);
-                    url = fileName;
-                }
+                String fileName = "excel/" + title + ExcelTypeEnum.XLSX.getValue();
+                IFileService fileService = SpringContextUtil.getBean(IFileService.class);
+                InputStream inputStream = new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
+                fileService.uploadCache(inputStream, fileName);
+                fileService.submit(fileName);
+                url = fileService.getDownloadUrl(fileName);
             }
-            Taskcenter taskcenter1 = new Taskcenter();
-            taskcenter1.setId(taskId);
-            taskcenter1.setStatus(4);
-            taskcenter1.setProgress(100);
-            taskcenter1.setFinishTime(new Date());
-            taskcenter1.setUrl(url);
-            taskcenter1.setErrorMsg("");
-            taskcenterMapper.updateById(taskcenter1);
+            TaskCenterUpdateDto taskCenterUpdateDto = new TaskCenterUpdateDto();
+            taskCenterUpdateDto.setId(taskId);
+            taskCenterUpdateDto.setStatus(4);
+            taskCenterUpdateDto.setProgress(100);
+            taskCenterUpdateDto.setUrl(url);
+            taskCenterUpdateDto.setErrorMsg("");
+            taskCenterManager.updateTask(taskCenterUpdateDto);
             callbackMap.put("success", true);
             callbackMap.put("url", url);
         } catch (Exception e) {
-            Taskcenter taskcenter = new Taskcenter();
-            taskcenter.setId(taskId);
-            taskcenter.setErrorMsg(e.getMessage());
-            taskcenter.setStatus(3);
-            taskcenterMapper.updateById(taskcenter);
+            TaskCenterUpdateDto taskCenterUpdateDto = new TaskCenterUpdateDto();
+            taskCenterUpdateDto.setId(taskId);
+            taskCenterUpdateDto.setErrorMsg(e.getMessage());
+            taskCenterUpdateDto.setStatus(3);
+            taskCenterManager.updateTask(taskCenterUpdateDto);
             callbackMap.put("success", false);
             callbackMap.put("error", e.getMessage());
         } finally {

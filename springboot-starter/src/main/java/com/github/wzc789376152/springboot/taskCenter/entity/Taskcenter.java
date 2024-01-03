@@ -55,12 +55,15 @@ public class Taskcenter implements Serializable {
 
     @ApiModelProperty(value = "状态1、进行中2、等待中3、错误4、成功")
     private Integer status;
-    
+
     @ApiModelProperty(value = "下载url")
     private String url;
 
     @ApiModelProperty(value = "完成时间")
     private Date finishTime;
+
+    @ApiModelProperty(value = "运行地址")
+    private String runUrl;
 
     @ApiModelProperty(value = "是否删除")
     @TableLogic
@@ -73,7 +76,7 @@ public class Taskcenter implements Serializable {
     @ApiModelProperty(value = "创建人Id")
     @TableField(fill = FieldFill.INSERT)
     @TableFieldType(FileType.AuthorId)
-    private Integer creatorId;
+    private String creatorId;
 
     @ApiModelProperty(value = "创建时间")
     @TableField(fill = FieldFill.INSERT)

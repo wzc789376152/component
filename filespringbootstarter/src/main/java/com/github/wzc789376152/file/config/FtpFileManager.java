@@ -23,4 +23,8 @@ public class FtpFileManager extends FtpFileManagerAbstract {
     public com.github.wzc789376152.file.FtpProperties ftpProperties() {
         return properties;
     }
+
+    public String getDownloadUrl(String filename) {
+        return null;
+    }
 }

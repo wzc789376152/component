@@ -81,4 +81,8 @@ public class LocalFileManangerAbstract implements IFileManager {
             file.mkdirs();
         }
     }
+
+    public String getDownloadUrl(String filename) {
+        return filename;
+    }
 }

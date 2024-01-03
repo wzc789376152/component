@@ -59,4 +59,12 @@ public interface IFileManager {
      * @throws IOException 异常
      */
     void changeWorkDir(String filepath) throws IOException;
+
+    /**
+     * 获取下载路径
+     *
+     * @param filename
+     * @return
+     */
+    String getDownloadUrl(String filename);
 }

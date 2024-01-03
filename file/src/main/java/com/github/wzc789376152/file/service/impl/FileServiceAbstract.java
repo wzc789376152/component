@@ -12,8 +12,6 @@ import java.nio.channels.FileChannel;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.logging.Logger;
 
 /**
@@ -470,5 +468,9 @@ public abstract class FileServiceAbstract implements IFileService {
             }
         }
         fileManager.delete(filename);
+    }
+
+    public String getDownloadUrl(String filename) {
+        return fileManager.getDownloadUrl(filename);
     }
 }

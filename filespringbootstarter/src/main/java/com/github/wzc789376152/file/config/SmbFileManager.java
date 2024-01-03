@@ -22,4 +22,8 @@ public class SmbFileManager extends SmbFileManagerAbstract {
     public com.github.wzc789376152.file.SmbProperties getSmbProperties() {
         return properties;
     }
+
+    public String getDownloadUrl(String filename) {
+        return filename;
+    }
 }

@@ -12,11 +12,15 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.github.wzc789376152.exception.BizRuntimeException;
 import com.github.wzc789376152.springboot.config.SpringContextUtil;
+import com.github.wzc789376152.springboot.config.init.InitPropertice;
 import com.github.wzc789376152.springboot.config.taskCenter.TaskCenterProperties;
+import com.github.wzc789376152.springboot.taskCenter.ITaskCenterManager;
 import com.github.wzc789376152.springboot.taskCenter.ITaskCenterService;
 import com.github.wzc789376152.springboot.taskCenter.TaskCenterService;
+import com.github.wzc789376152.springboot.taskCenter.dto.TaskCenterUpdateDto;
 import com.github.wzc789376152.springboot.taskCenter.entity.Taskcenter;
 import com.github.wzc789376152.springboot.taskCenter.mapper.TaskcenterMapper;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 
@@ -29,6 +33,8 @@ public class TaskCenterUtils {
         private String funcName;
 
         private String callbackFuncName;
+
+        private String runUrl;
 
         public Build(T service) {
             this.service = service;
@@ -59,16 +65,25 @@ public class TaskCenterUtils {
             return this;
         }
 
+        public Build<T> runUrl(String runUrl) {
+            this.runUrl = runUrl;
+            return this;
+        }
+
         public ITaskCenterService<T> build() {
             TaskCenterProperties taskCenterProperties = SpringContextUtil.getBean(TaskCenterProperties.class);
             if (!taskCenterProperties.getEnable()) {
                 throw new BizRuntimeException("未配置任务中心");
             }
+            if (runUrl == null) {
+                InitPropertice initPropertice = SpringContextUtil.getBean(InitPropertice.class);
+                runUrl = "http://" + initPropertice.getServerName() + "/taskCenterBase/redo";
+            }
             if (service != null) {
-                return new TaskCenterService<>(service, funcName, callbackFuncName);
+                return new TaskCenterService<>(service, funcName, callbackFuncName, runUrl);
             }
             if (serviceName != null) {
-                return new TaskCenterService<>(serviceName, funcName, callbackFuncName);
+                return new TaskCenterService<>(serviceName, funcName, callbackFuncName, runUrl);
             }
             return null;
         }
@@ -76,9 +91,10 @@ public class TaskCenterUtils {
 
     /**
      * 服务构造器
+     *
      * @param service 服务对象
+     * @param <T>     服务类型
      * @return T
-     * @param <T> 服务类型
      */
     public static <T> Build<T> builder(T service) {
         return new Build<>(service);
@@ -90,8 +106,9 @@ public class TaskCenterUtils {
 
     /**
      * 查看列表
-     * @param wrapper wrapper
-     * @param pageNum pageNum
+     *
+     * @param wrapper  wrapper
+     * @param pageNum  pageNum
      * @param pageSize pageSize
      * @return PageInfo
      */
@@ -108,31 +125,36 @@ public class TaskCenterUtils {
 
     /**
      * 重启任务
+     *
      * @param id id
      */
-    public static void redo(Integer id) {
+    public static void redo(Integer id, Integer timer) {
+        if (timer == null) {
+            timer = 0;
+        }
         TaskCenterProperties taskCenterProperties = SpringContextUtil.getBean(TaskCenterProperties.class);
         if (!taskCenterProperties.getEnable()) {
             throw new BizRuntimeException("未配置任务中心");
         }
-        TaskcenterMapper taskcenterMapper = SpringContextUtil.getBean(TaskcenterMapper.class);
-        Taskcenter taskcenter = taskcenterMapper.selectById(id);
+        ITaskCenterManager taskcenterMapper = SpringContextUtil.getBean(ITaskCenterManager.class);
+        Taskcenter taskcenter = taskcenterMapper.getTask(id);
         if (taskcenter == null) {
             throw new BizRuntimeException("任务不存在");
         }
         try {
-            SpringContextUtil.getBean(taskcenter.getServiceName().substring(0, 1).toLowerCase() + taskcenter.getServiceName().substring(1));
+            SpringContextUtil.getBean(Class.forName(taskcenter.getServiceName()));
         } catch (Exception e) {
-            Taskcenter taskcenter1 = new Taskcenter();
-            taskcenter1.setId(taskcenter.getId());
-            taskcenter1.setStatus(3);
-            taskcenter1.setErrorMsg("服务不存在");
-            throw new BizRuntimeException("服务不存在");
+            RestTemplate restTemplate = SpringContextUtil.getBean(RestTemplate.class);
+            Boolean isRedo = restTemplate.getForObject(taskcenter.getRunUrl() + "?id=" + id + "&timer=" + (timer + 1), Boolean.class);
+            if (Boolean.FALSE.equals(isRedo)) {
+                throw new RuntimeException("服务不存在");
+            }
+            return;
         }
-        Taskcenter taskcenter1 = new Taskcenter();
-        taskcenter1.setId(id);
-        taskcenter1.setStatus(2);
-        taskcenterMapper.updateById(taskcenter1);
+        TaskCenterUpdateDto taskCenterUpdateDto = new TaskCenterUpdateDto();
+        taskCenterUpdateDto.setId(id);
+        taskCenterUpdateDto.setStatus(2);
+        taskcenterMapper.updateTask(taskCenterUpdateDto);
         JSONObject paramObj = JSON.parseObject(taskcenter.getServiceParam());
         String name = paramObj.getString("name");
         String data = paramObj.getString("data");
@@ -143,12 +165,12 @@ public class TaskCenterUtils {
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
-
         builder(taskcenter.getServiceName()).funcName(taskcenter.getServiceMethod()).callbackFuncName(taskcenter.getCallbackServiceMethod()).build().runAsync(taskcenter.getTitle(), taskcenter.getId(), params);
     }
 
     /**
      * 删除任务
+     *
      * @param id id
      */
     public static void remove(Integer id) {

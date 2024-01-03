@@ -49,11 +49,11 @@ public class InitPlatformConfig extends InitConfig {
 
     private void initDb() {
         if (taskCenterProperties != null && taskCenterProperties.getEnable() && taskCenterProperties.getInitTable()) {
-            Resource resources = new ClassPathResource("sql/db_taskcenter.sql");
-            ResourceDatabasePopulator resourceDatabasePopulator = new ResourceDatabasePopulator();
-            resourceDatabasePopulator.addScripts(resources);
-            if (dataSource != null) {
-                resourceDatabasePopulator.execute(dataSource);
+            initDb("sql/db_taskcenter.sql");
+            try {
+                initDb("sql/db_taskcenter_update_v1.sql");
+            } catch (Exception e) {
+                log.warn(e.getMessage());
             }
         }
         if (shardingPropertics != null && shardingPropertics.getInitTable() && yamlShardingRuleConfiguration != null && yamlShardingRuleConfiguration.getTables() != null && yamlShardingRuleConfiguration.getTables().size() > 0) {
@@ -73,6 +73,15 @@ public class InitPlatformConfig extends InitConfig {
                     }
                 }
             }
+        }
+    }
+
+    private void initDb(String sourceUrl) {
+        Resource resources = new ClassPathResource(sourceUrl);
+        ResourceDatabasePopulator resourceDatabasePopulator = new ResourceDatabasePopulator();
+        resourceDatabasePopulator.addScripts(resources);
+        if (dataSource != null) {
+            resourceDatabasePopulator.execute(dataSource);
         }
     }
 
