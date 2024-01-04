@@ -42,6 +42,14 @@ public abstract class CommonResponseAdvice implements ResponseBodyAdvice<Object>
     @Autowired
     IResponseService responseService;
 
+    public IResponseService getResponseService() {
+        return this.responseService;
+    }
+
+    public String getTraceId() {
+        return MDC.get("traceId");
+    }
+
     @Override
     public boolean supports(MethodParameter methodParameter, Class aClass) {
         return true;
@@ -51,7 +59,7 @@ public abstract class CommonResponseAdvice implements ResponseBodyAdvice<Object>
     @Override
     public Object beforeBodyWrite(Object o, MethodParameter methodParameter, MediaType mediaType, Class aClass, ServerHttpRequest serverHttpRequest, ServerHttpResponse serverHttpResponse) {
         List<String> headerList = serverHttpRequest.getHeaders().get("FeignResultFormat");
-        String traceId = MDC.get("traceId");
+        String traceId = getTraceId();
         if (headerList == null || !headerList.get(0).equals("true")) {
             NoResultFormatter noResultFormatter = AnnotationUtils.findAnnotation(Objects.requireNonNull(methodParameter.getMethod()), NoResultFormatter.class);
             if (noResultFormatter == null) {
@@ -173,6 +181,6 @@ public abstract class CommonResponseAdvice implements ResponseBodyAdvice<Object>
 
     protected Object error(Integer code, String msg, Exception exception) {
         afterError(code, msg, exception);
-        return responseService.error(code, msg);
+        return responseService.error(getTraceId(), code, msg);
     }
 }
