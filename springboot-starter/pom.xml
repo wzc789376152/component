@@ -10,13 +10,13 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <properties>
-        <project.release.version>2.1.6</project.release.version>
+        <project.release.version>2.1.7</project.release.version>
     </properties>
     <profiles>
         <profile>
             <id>snapshot</id>
             <properties>
-                <project.release.version>2.1.6-SNAPSHOT</project.release.version>
+                <project.release.version>2.1.7-SNAPSHOT</project.release.version>
             </properties>
         </profile>
     </profiles>
