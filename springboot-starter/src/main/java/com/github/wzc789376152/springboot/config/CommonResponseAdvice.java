@@ -78,7 +78,7 @@ public abstract class CommonResponseAdvice implements ResponseBodyAdvice<Object>
     @ExceptionHandler(value = DuplicateKeyException.class)
     public Object exception(DuplicateKeyException e) {
         log.error("唯一索引异常", e);
-        return error(500, "记录已存在，无法重复添加");
+        return error(500, "记录已存在，无法重复添加", e);
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -86,7 +86,7 @@ public abstract class CommonResponseAdvice implements ResponseBodyAdvice<Object>
     public Object exception(MissingServletRequestParameterException e) {
         String format = MessageFormat.format("参数 {0} 类型 {1} 解析失败", e.getParameterName(), e.getParameterType());
         log.error(format, e);
-        return error(400, format);
+        return error(400, format, e);
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -106,7 +106,7 @@ public abstract class CommonResponseAdvice implements ResponseBodyAdvice<Object>
         }
         log.error(builder.toString(), exception);
         response.setStatus(400);
-        return error(400, builder.toString());
+        return error(400, builder.toString(), exception);
     }
 
     /**
@@ -120,7 +120,7 @@ public abstract class CommonResponseAdvice implements ResponseBodyAdvice<Object>
     public Object exception(ConstraintViolationException exception, HttpServletResponse response) {
         log.error(exception.getMessage(), exception);
         response.setStatus(400);
-        return error(400, exception.getMessage());
+        return error(400, exception.getMessage(), exception);
     }
 
     /**
@@ -134,7 +134,7 @@ public abstract class CommonResponseAdvice implements ResponseBodyAdvice<Object>
     public Object exception(BizRuntimeException exception, HttpServletResponse response) {
         log.error(exception.getMessage(), exception);
         response.setStatus(500);
-        return error(ObjectUtils.isNotEmpty(exception.getErrorCode()) ? exception.getErrorCode() : 500, exception.getMessage());
+        return error(ObjectUtils.isNotEmpty(exception.getErrorCode()) ? exception.getErrorCode() : 500, exception.getMessage(), exception);
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -142,7 +142,7 @@ public abstract class CommonResponseAdvice implements ResponseBodyAdvice<Object>
     public Object exception(HttpMessageNotReadableException exception, HttpServletResponse response) {
         log.error(exception.getMessage(), exception);
         response.setStatus(400);
-        return error(400, "请输入正确数据格式");
+        return error(400, "请输入正确数据格式", exception);
     }
 
     @ExceptionHandler({FeignException.class})
@@ -156,7 +156,7 @@ public abstract class CommonResponseAdvice implements ResponseBodyAdvice<Object>
         } else if (message.contains("\"]")) {
             message = message.substring(message.lastIndexOf("[\"") + 2, message.lastIndexOf("\"]"));
         }
-        return error(exception.status(), message);
+        return error(exception.status(), message, exception);
     }
 
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -166,10 +166,13 @@ public abstract class CommonResponseAdvice implements ResponseBodyAdvice<Object>
         if (exception.getCause() != null && exception.getCause() instanceof BizRuntimeException) {
             return exception((BizRuntimeException) exception.getCause());
         }
-        return error(500, SystemException.SYSTEM_ERROR_MSG);
+        return error(500, SystemException.SYSTEM_ERROR_MSG, exception);
     }
 
-    protected Object error(Integer code, String msg) {
+    protected abstract void afterError(Integer code, String msg, Exception exception);
+
+    protected Object error(Integer code, String msg, Exception exception) {
+        afterError(code, msg, exception);
         return responseService.error(code, msg);
     }
 }
