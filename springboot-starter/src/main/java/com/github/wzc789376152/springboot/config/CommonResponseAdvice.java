@@ -63,7 +63,7 @@ public abstract class CommonResponseAdvice implements ResponseBodyAdvice<Object>
         if (headerList == null || !headerList.get(0).equals("true")) {
             NoResultFormatter noResultFormatter = AnnotationUtils.findAnnotation(Objects.requireNonNull(methodParameter.getMethod()), NoResultFormatter.class);
             if (noResultFormatter == null) {
-                if (!o.getClass().getName().equals(responseService.getResultClass().getName())) {
+                if (o == null || !o.getClass().getName().equals(responseService.getResultClass().getName())) {
                     ApiOperation apiOperation = AnnotationUtils.findAnnotation(Objects.requireNonNull(methodParameter.getMethod()), ApiOperation.class);
                     if (apiOperation != null) {
                         o = responseService.success(traceId, o, apiOperation.value() + "成功");
@@ -76,7 +76,7 @@ public abstract class CommonResponseAdvice implements ResponseBodyAdvice<Object>
         if (mediaType.equals(MediaType.APPLICATION_JSON)) {
             return o;
         }
-        if (o.getClass().getName().equals(responseService.getResultClass().getName())) {
+        if (o != null && o.getClass().getName().equals(responseService.getResultClass().getName())) {
             return JSONUtils.parse(o, String.class);
         }
         return o;
