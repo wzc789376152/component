@@ -34,29 +34,12 @@ public class IpUtil {
         if (request == null) {
             return null;
         }
-        String remoteAddr = request.getRemoteAddr();
-        String forwarded = request.getHeader("X-Forwarded-For");
-        String realIp = request.getHeader("X-Real-IP");
-
-        String ip = null;
-        if (realIp == null) {
-            if (forwarded == null || forwarded.equals("0:0:0:0:0:0:0:1")) {
-                ip = formatIpv4(remoteAddr);
-            } else {
-                ip = formatIpv4(forwarded);
-            }
-        } else {
-            if (forwarded == null || forwarded.equals("0:0:0:0:0:0:0:1")) {
-                ip = formatIpv4(realIp);
-            } else {
-                if (realIp.equals(forwarded)) {
-                    ip = formatIpv4(realIp);
-                } else {
-                    ip = formatIpv4(forwarded);
-                }
-            }
+        // nginx 代理服务器
+        String ip = request.getHeader("X-Real-IP");
+        if (ip != null && ip.length() != 0 && !"unknown".equalsIgnoreCase(ip)) {
+            return formatIpv4(ip);
         }
-        return ip;
+        return formatIpv4(request.getRemoteAddr());
     }
 
     public static String getIpAddr() {
