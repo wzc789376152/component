@@ -34,12 +34,29 @@ public class IpUtil {
         if (request == null) {
             return null;
         }
-        // nginx 代理服务器
-        String ip = request.getHeader("X-Real-IP");
-        if (ip != null && ip.length() != 0 && !"unknown".equalsIgnoreCase(ip)) {
-            return formatIpv4(ip);
+        String remoteAddr = request.getRemoteAddr();
+        String forwarded = request.getHeader("X-Forwarded-For");
+        String realIp = request.getHeader("X-Real-IP");
+
+        String ip = null;
+        if (realIp == null) {
+            if (forwarded == null) {
+                ip = formatIpv4(remoteAddr);
+            } else {
+                ip = formatIpv4(forwarded);
+            }
+        } else {
+            if (forwarded == null) {
+                ip = formatIpv4(realIp);
+            } else {
+                if (realIp.equals(forwarded)) {
+                    ip = formatIpv4(realIp);
+                } else {
+                    ip = formatIpv4(forwarded);
+                }
+            }
         }
-        return formatIpv4(request.getRemoteAddr());
+        return ip;
     }
 
     public static String getIpAddr() {
@@ -124,6 +141,7 @@ public class IpUtil {
         }
         return map;
     }
+
     public static boolean checkIp(List<String> ipWhileList) {
         if (ipWhileList == null || ipWhileList.size() == 0) {
             return false;
@@ -154,6 +172,7 @@ public class IpUtil {
         }
         return false;
     }
+
     /**
      * 格式化ip为标准ipv4
      *
