@@ -40,13 +40,13 @@ public class IpUtil {
 
         String ip = null;
         if (realIp == null) {
-            if (forwarded == null) {
+            if (forwarded == null || forwarded.equals("0:0:0:0:0:0:0:1")) {
                 ip = formatIpv4(remoteAddr);
             } else {
                 ip = formatIpv4(forwarded);
             }
         } else {
-            if (forwarded == null) {
+            if (forwarded == null || forwarded.equals("0:0:0:0:0:0:0:1")) {
                 ip = formatIpv4(realIp);
             } else {
                 if (realIp.equals(forwarded)) {
