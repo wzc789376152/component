@@ -5,6 +5,8 @@ import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.ExcelWriter;
 import com.alibaba.excel.support.ExcelTypeEnum;
 import com.alibaba.excel.write.metadata.WriteSheet;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.ttl.threadpool.TtlExecutors;
 import com.github.wzc789376152.file.service.IFileService;
@@ -83,6 +85,53 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
     }
 
     @Override
+    public <P> Integer initTask(String title, P param) {
+        List<P> list = new ArrayList<>();
+        list.add(param);
+        return initTask(title, list);
+    }
+
+    @Override
+    public <P> Integer initTask(String title, List<P> params) {
+        log.info("初始化任务:" + title);
+        String data = JSONUtils.toJSONString(params);
+        String serviceName = service.getClass().getName();
+        if (serviceName.contains("$")) {
+            serviceName = serviceName.split("\\$")[0];
+        }
+        JSONObject paramObj = new JSONObject();
+        paramObj.put("data", data);
+        paramObj.put("name", params.get(0).getClass().getName());
+        TaskCenterInitDto taskCenterInitDto = new TaskCenterInitDto();
+        taskCenterInitDto.setTitle(title);
+        taskCenterInitDto.setServiceName(serviceName);
+        taskCenterInitDto.setFuncName(funcName);
+        taskCenterInitDto.setCallbackFuncName(callbackFuncName);
+        taskCenterInitDto.setServiceParam(paramObj.toJSONString());
+        taskCenterInitDto.setRunUrl(runUrl);
+        return taskCenterManager.initTask(taskCenterInitDto);
+    }
+
+    @Override
+    public void runAsync(Integer taskId) {
+        Taskcenter taskcenter = taskCenterManager.getTask(taskId);
+        if (taskcenter == null) {
+            return;
+        }
+        JSONObject paramObj = JSON.parseObject(taskcenter.getServiceParam());
+        String name = paramObj.getString("name");
+        String data = paramObj.getString("data");
+        List<?> params;
+        try {
+            Class<?> clazz = Class.forName(name);
+            params = JSONArray.parseArray(data, clazz);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        runAsync(taskcenter.getTitle(), taskId, params);
+    }
+
+    @Override
     public <P> void runAsync(String title, P param) {
         runAsync(title, null, param);
     }
@@ -104,10 +153,9 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
 
     @Override
     public <P> void runAsync(String title, Integer taskId, List<P> params) {
-        if (params == null || params.size() == 0) {
+        if (params == null || params.isEmpty()) {
             return;
         }
-        String data = JSONUtils.toJSONString(params);
         if (taskId != null) {
             Taskcenter taskcenter = taskCenterManager.getTask(taskId);
             if (taskcenter == null || taskcenter.getStatus() == 1) {
@@ -115,23 +163,12 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
             }
         } else {
             log.info("初始化任务:" + title);
+            taskId = initTask(title, params);
         }
-        String serviceName = service.getClass().getName();
-        if (serviceName.contains("$")) {
-            serviceName = serviceName.split("\\$")[0];
-        }
-        JSONObject paramObj = new JSONObject();
-        paramObj.put("data", data);
-        paramObj.put("name", params.get(0).getClass().getName());
-        TaskCenterInitDto taskCenterInitDto = new TaskCenterInitDto();
-        taskCenterInitDto.setId(taskId);
-        taskCenterInitDto.setTitle(title);
-        taskCenterInitDto.setServiceName(serviceName);
-        taskCenterInitDto.setFuncName(funcName);
-        taskCenterInitDto.setCallbackFuncName(callbackFuncName);
-        taskCenterInitDto.setServiceParam(paramObj.toJSONString());
-        taskCenterInitDto.setRunUrl(runUrl);
-        taskId = taskCenterManager.initTask(taskCenterInitDto);
+        TaskCenterUpdateDto taskCenterUpdateDto = new TaskCenterUpdateDto();
+        taskCenterUpdateDto.setId(taskId);
+        taskCenterUpdateDto.setStatus(1);
+        taskCenterManager.updateTask(taskCenterUpdateDto);
         ExecutorService executorService = SpringContextUtil.getBean("taskCenterAsync", ExecutorService.class);
         Integer finalTaskId = taskId;
         executorService.submit(() -> run(title, finalTaskId, params.toArray()));
@@ -163,7 +200,7 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
                 futureList.add(executorService.submit(() -> method.invoke(service, param)));
             }
             List<Object> resultList = new ArrayList<>();
-            int total = futureList.size() == 0 ? 1 : futureList.size();
+            int total = futureList.isEmpty() ? 1 : futureList.size();
             int count = 0;
             ThreadPoolTaskExecutor executor1 = new ThreadPoolTaskExecutor();
             executor1.setCorePoolSize(16);
@@ -180,14 +217,13 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
                 if (result instanceof List) {
                     resultList.addAll((List) result);
                 }
-                Integer finalTaskId = taskId;
                 int finalCount = count;
                 updateFutureList.add(executorService1.submit(() -> {
                     int process = finalCount * 100 / total;
-                    Taskcenter taskcenter1 = taskCenterManager.getTask(finalTaskId);
+                    Taskcenter taskcenter1 = taskCenterManager.getTask(taskId);
                     if (taskcenter1.getProgress() < process) {
                         TaskCenterUpdateDto taskCenterUpdateDto = new TaskCenterUpdateDto();
-                        taskCenterUpdateDto.setId(finalTaskId);
+                        taskCenterUpdateDto.setId(taskId);
                         taskCenterUpdateDto.setStatus(1);
                         taskCenterUpdateDto.setProgress(process);
                         taskCenterManager.updateTask(taskCenterUpdateDto);
@@ -199,7 +235,7 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
                 future.get();
             }
             String url = "";
-            if (resultList.size() > 0) {
+            if (!resultList.isEmpty()) {
                 //保存excel文件至sso
                 ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
                 ExcelWriter writer = EasyExcel.write(byteArrayOutputStream).build();
@@ -223,6 +259,7 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
             callbackMap.put("success", true);
             callbackMap.put("url", url);
         } catch (Exception e) {
+            log.error("任务失败", e);
             TaskCenterUpdateDto taskCenterUpdateDto = new TaskCenterUpdateDto();
             taskCenterUpdateDto.setId(taskId);
             taskCenterUpdateDto.setErrorMsg(e.getMessage());
