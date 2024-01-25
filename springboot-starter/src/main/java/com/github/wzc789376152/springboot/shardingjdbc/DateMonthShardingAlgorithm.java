@@ -7,13 +7,14 @@ import com.github.wzc789376152.springboot.utils.ShardingUtils;
 import com.github.wzc789376152.utils.DateUtils;
 import com.google.common.collect.Range;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.shardingsphere.api.sharding.standard.RangeShardingAlgorithm;
-import org.apache.shardingsphere.api.sharding.standard.RangeShardingValue;
+import org.apache.shardingsphere.sharding.api.sharding.standard.PreciseShardingValue;
+import org.apache.shardingsphere.sharding.api.sharding.standard.RangeShardingValue;
+import org.apache.shardingsphere.sharding.api.sharding.standard.StandardShardingAlgorithm;
 
 import java.util.*;
 
 @Slf4j
-public class DateMonthRangeShardingAlgorithm implements RangeShardingAlgorithm<Date> {
+public class DateMonthShardingAlgorithm implements StandardShardingAlgorithm<Date> {
 
     @Override
     public Collection<String> doSharding(Collection<String> availableTargetNames, RangeShardingValue<Date> rangeShardingValue) {
@@ -45,5 +46,39 @@ public class DateMonthRangeShardingAlgorithm implements RangeShardingAlgorithm<D
             }
         }
         return false;
+    }
+
+    @Override
+    public String doSharding(Collection<String> collection, PreciseShardingValue<Date> preciseShardingValue) {
+        Date date = preciseShardingValue.getValue();
+        Date upperDate = new Date();
+        Date lowerDate = DateUtils.parse("2000-01-01", "yyyy-MM-dd");
+        ShardingPropertics shardingPropertics = SpringContextUtil.getBean(ShardingPropertics.class);
+        if (shardingPropertics.getMinDate() != null) {
+            lowerDate = shardingPropertics.getMinDate();
+        }
+        if (date.getTime() > upperDate.getTime()) {
+            date = upperDate;
+        }
+        if (date.getTime() < lowerDate.getTime()) {
+            date = lowerDate;
+        }
+        String suffix = ShardingUtils.getSuffixByYearMonth(date);
+        for (String tableName : collection) {
+            if (tableName.endsWith(suffix)) {
+                return tableName;
+            }
+        }
+        throw new IllegalArgumentException("未找到匹配的数据表");
+    }
+
+    @Override
+    public void init() {
+
+    }
+
+    @Override
+    public String getType() {
+        return null;
     }
 }

@@ -23,15 +23,13 @@ import org.apache.ibatis.plugin.Invocation;
 import org.apache.ibatis.plugin.Signature;
 import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
-import org.apache.shardingsphere.core.yaml.config.sharding.YamlShardingRuleConfiguration;
-import org.apache.shardingsphere.core.yaml.config.sharding.YamlTableRuleConfiguration;
+import org.apache.shardingsphere.sharding.yaml.config.YamlShardingRuleConfiguration;
+import org.apache.shardingsphere.sharding.yaml.config.rule.YamlTableRuleConfiguration;
 
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.Statement;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Map;
+import java.util.*;
 
 @Intercepts({@Signature(
         type = StatementHandler.class,
@@ -145,19 +143,21 @@ public class MybatisPlusInterceptor extends com.baomidou.mybatisplus.extension.p
         TableName annotation = pojoClazz.getAnnotation(TableName.class);
         if (shardTableMap.containsKey(annotation.value())) {
             YamlTableRuleConfiguration shardConfig = shardTableMap.get(annotation.value());
-            String shardingColumn = null;
+            List<String> shardingColumns = new ArrayList<>();
             if (shardConfig.getTableStrategy().getStandard() != null) {
-                shardingColumn = shardConfig.getTableStrategy().getStandard().getShardingColumn();
+                shardingColumns.add(shardConfig.getTableStrategy().getStandard().getShardingColumn());
             }
-            if (shardConfig.getTableStrategy().getInline() != null) {
-                shardingColumn = shardConfig.getTableStrategy().getInline().getShardingColumn();
+            if (shardConfig.getTableStrategy().getComplex() != null) {
+                shardingColumns.addAll(Arrays.asList(shardConfig.getTableStrategy().getComplex().getShardingColumns().split(",")));
             }
-            if (shardingColumn != null) {
-                // 数据库属性是下划线,代码是驼峰命名,所以需要对分表属性进行下划线转驼峰
-                String camelCase = StrUtil.toCamelCase(shardingColumn);
-                // 参数添加分表属性
-                ParameterMapping parameterMapping = new ParameterMapping.Builder(mappedStatement.getConfiguration(), "et." + camelCase, Object.class).build();
-                boundSql.getParameterMappings().add(parameterMapping);
+            for (String shardingColumn : shardingColumns) {
+                if (shardingColumn != null) {
+                    // 数据库属性是下划线,代码是驼峰命名,所以需要对分表属性进行下划线转驼峰
+                    String camelCase = StrUtil.toCamelCase(shardingColumn);
+                    // 参数添加分表属性
+                    ParameterMapping parameterMapping = new ParameterMapping.Builder(mappedStatement.getConfiguration(), "et." + camelCase, Object.class).build();
+                    boundSql.getParameterMappings().add(parameterMapping);
+                }
             }
         }
         return invocation.proceed();

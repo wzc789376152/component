@@ -6,11 +6,14 @@ import com.baomidou.dynamic.datasource.provider.DynamicDataSourceProvider;
 import com.baomidou.dynamic.datasource.spring.boot.autoconfigure.DataSourceProperty;
 import com.baomidou.dynamic.datasource.spring.boot.autoconfigure.DynamicDataSourceAutoConfiguration;
 import com.baomidou.dynamic.datasource.spring.boot.autoconfigure.DynamicDataSourceProperties;
+import org.apache.shardingsphere.driver.jdbc.core.datasource.ShardingSphereDataSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Primary;
 
 import javax.annotation.Resource;
@@ -18,7 +21,8 @@ import javax.sql.DataSource;
 import java.util.Map;
 
 @Configuration
-@AutoConfigureBefore(DynamicDataSourceAutoConfiguration.class)
+
+@AutoConfigureBefore({DynamicDataSourceAutoConfiguration.class, SpringBootConfiguration.class})
 public class DataSourceConfiguration {
     @Resource
     private DynamicDataSourceProperties properties;
@@ -28,8 +32,8 @@ public class DataSourceConfiguration {
      * shardingjdbc使用了主从: masterSlaveDataSource
      */
     @Autowired(required = false)
-    @Qualifier("shardingDataSource")
-    private DataSource shardingDataSource;
+    @Qualifier("shardingSphereDataSource")
+    private DataSource shardingSphereDataSource;
 
     @Bean
     public DynamicDataSourceProvider dynamicDataSourceProvider() {
@@ -38,8 +42,8 @@ public class DataSourceConfiguration {
             @Override
             public Map<String, DataSource> loadDataSources() {
                 Map<String, DataSource> dataSourceMap = createDataSourceMap(datasourceMap);
-                if (shardingDataSource != null) {
-                    dataSourceMap.put("master", shardingDataSource);
+                if (shardingSphereDataSource != null) {
+                    dataSourceMap.put("master", shardingSphereDataSource);
                 }
                 //打开下面的代码可以把 shardingjdbc 管理的数据源也交给动态数据源管理 (根据自己需要选择开启)
                 //dataSourceMap.putAll(((MasterSlaveDataSource) masterSlaveDataSource).getDataSourceMap());
