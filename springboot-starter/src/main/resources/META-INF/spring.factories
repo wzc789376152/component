@@ -13,6 +13,8 @@ org.springframework.boot.autoconfigure.EnableAutoConfiguration=com.github.wzc789
   com.github.wzc789376152.springboot.config.redis.RedisConfig,\
   com.github.wzc789376152.springboot.config.sequence.SequenceProperty,\
   com.github.wzc789376152.springboot.config.shardingsphere.ShardingPropertics,\
+  com.github.wzc789376152.springboot.shardingjdbc.DateMonthShardingAlgorithm,\
+  com.github.wzc789376152.springboot.shardingjdbc.DateYearShardingAlgorithm,\
   com.github.wzc789376152.springboot.config.swagger.SwaggerConfig,\
   com.github.wzc789376152.springboot.config.taskCenter.TaskCenterConfig,\
   com.github.wzc789376152.springboot.taskCenter.controller.TaskCenterController

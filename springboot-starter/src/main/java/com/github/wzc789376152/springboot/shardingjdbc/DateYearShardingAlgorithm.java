@@ -10,10 +10,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.sharding.api.sharding.standard.PreciseShardingValue;
 import org.apache.shardingsphere.sharding.api.sharding.standard.RangeShardingValue;
 import org.apache.shardingsphere.sharding.api.sharding.standard.StandardShardingAlgorithm;
+import org.springframework.stereotype.Component;
 
 import java.util.*;
 
 @Slf4j
+@Component(value = "dateYearShardingAlgorithm")
 public class DateYearShardingAlgorithm implements StandardShardingAlgorithm<Date> {
     @Override
     public String doSharding(Collection<String> availableTargetNames, PreciseShardingValue<Date> preciseShardingValue) {
