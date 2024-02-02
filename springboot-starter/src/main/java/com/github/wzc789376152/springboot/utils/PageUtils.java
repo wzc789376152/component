@@ -106,42 +106,48 @@ public class PageUtils {
     }
 
     public <S, T> PageInfo<T> result(PageConvertFunction<S, T> pageConvertFunction) {
-        Page<T> toPage = new Page<>(page.getPageNum(), page.getPageSize());
-        toPage.setPages(page.getPages());
-        toPage.setTotal(page.getTotal());
-        List<Future<T>> futureList = new ArrayList<>();
         ExecutorService executorService = TtlExecutors.getTtlExecutorService(executor.getThreadPoolExecutor());
-        for (Object from : page.getResult()) {
-            futureList.add(executorService.submit(() -> pageConvertFunction.convert((S) from)));
-        }
-        for (Future<T> future : futureList) {
-            try {
-                toPage.add(future.get());
-            } catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException(e);
+        try {
+            Page<T> toPage = new Page<>(page.getPageNum(), page.getPageSize());
+            toPage.setPages(page.getPages());
+            toPage.setTotal(page.getTotal());
+            List<Future<T>> futureList = new ArrayList<>();
+            for (Object from : page.getResult()) {
+                futureList.add(executorService.submit(() -> pageConvertFunction.convert((S) from)));
             }
+            for (Future<T> future : futureList) {
+                try {
+                    toPage.add(future.get());
+                } catch (InterruptedException | ExecutionException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            return PageInfo.of(toPage);
+        } finally {
+            executor.shutdown();
         }
-        executor.shutdown();
-        return PageInfo.of(toPage);
     }
 
     public <S, P, T> PageInfo<T> result(PageConvertTwoFunction<S, P, T> pageConvertFunction, P param) {
-        Page<T> toPage = new Page<>(page.getPageNum(), page.getPageSize());
-        toPage.setPages(page.getPages());
-        toPage.setTotal(page.getTotal());
-        List<Future<T>> futureList = new ArrayList<>();
         ExecutorService executorService = TtlExecutors.getTtlExecutorService(executor.getThreadPoolExecutor());
-        for (Object from : page.getResult()) {
-            futureList.add(executorService.submit(() -> pageConvertFunction.convert((S) from, param)));
-        }
-        for (Future<T> future : futureList) {
-            try {
-                toPage.add(future.get());
-            } catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException(e);
+        try {
+            Page<T> toPage = new Page<>(page.getPageNum(), page.getPageSize());
+            toPage.setPages(page.getPages());
+            toPage.setTotal(page.getTotal());
+            List<Future<T>> futureList = new ArrayList<>();
+            for (Object from : page.getResult()) {
+                futureList.add(executorService.submit(() -> pageConvertFunction.convert((S) from, param)));
             }
+            for (Future<T> future : futureList) {
+                try {
+                    toPage.add(future.get());
+                } catch (InterruptedException | ExecutionException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            return PageInfo.of(toPage);
+        } finally {
+            executor.shutdown();
         }
-        executor.shutdown();
-        return PageInfo.of(toPage);
     }
 }
