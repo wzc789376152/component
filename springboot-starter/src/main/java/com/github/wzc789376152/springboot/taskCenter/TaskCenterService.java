@@ -186,15 +186,15 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
         callbackMap.put("taskId", taskId);
         callbackMap.put("data", JSONUtils.toJSONString(params));
         callbackMap.put("startTime", System.currentTimeMillis());
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(16);
+        executor.setMaxPoolSize(32);
+        executor.setQueueCapacity(100000);
+        executor.setThreadNamePrefix("taskCenterItem-handle-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.initialize();
+        ExecutorService executorService = TtlExecutors.getTtlExecutorService(executor.getThreadPoolExecutor());
         try {
-            ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-            executor.setCorePoolSize(16);
-            executor.setMaxPoolSize(32);
-            executor.setQueueCapacity(100000);
-            executor.setThreadNamePrefix("taskCenterItem-handle-");
-            executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-            executor.initialize();
-            ExecutorService executorService = TtlExecutors.getTtlExecutorService(executor.getThreadPoolExecutor());
             List<Future<Object>> futureList = new ArrayList<>();
             for (P param : params) {
                 futureList.add(executorService.submit(() -> method.invoke(service, param)));
@@ -268,6 +268,7 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
             callbackMap.put("success", false);
             callbackMap.put("error", e.getMessage());
         } finally {
+            executor.shutdown();
             rBucket.delete();
         }
         log.info("任务结束:" + title);

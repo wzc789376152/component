@@ -20,7 +20,7 @@ public class PageUtils {
     private final Integer pageNum;
     private final Integer pageSize;
 
-    private final ExecutorService executorService;
+    private final ThreadPoolTaskExecutor executor;
 
     private Boolean count = true;
     private Page page;
@@ -46,14 +46,13 @@ public class PageUtils {
         if (pageSize == 0) {
             this.count = false;
         }
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(4);
         executor.setMaxPoolSize(8);
         executor.setQueueCapacity(1000);
         executor.setThreadNamePrefix("pageResult-handle-");
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         executor.initialize();
-        executorService = TtlExecutors.getTtlExecutorService(executor.getThreadPoolExecutor());
     }
 
     public PageUtils count(Boolean count) {
@@ -111,6 +110,7 @@ public class PageUtils {
         toPage.setPages(page.getPages());
         toPage.setTotal(page.getTotal());
         List<Future<T>> futureList = new ArrayList<>();
+        ExecutorService executorService = TtlExecutors.getTtlExecutorService(executor.getThreadPoolExecutor());
         for (Object from : page.getResult()) {
             futureList.add(executorService.submit(() -> pageConvertFunction.convert((S) from)));
         }
@@ -121,7 +121,7 @@ public class PageUtils {
                 throw new RuntimeException(e);
             }
         }
-        executorService.shutdown();
+        executor.shutdown();
         return PageInfo.of(toPage);
     }
 
@@ -130,6 +130,7 @@ public class PageUtils {
         toPage.setPages(page.getPages());
         toPage.setTotal(page.getTotal());
         List<Future<T>> futureList = new ArrayList<>();
+        ExecutorService executorService = TtlExecutors.getTtlExecutorService(executor.getThreadPoolExecutor());
         for (Object from : page.getResult()) {
             futureList.add(executorService.submit(() -> pageConvertFunction.convert((S) from, param)));
         }
@@ -140,7 +141,7 @@ public class PageUtils {
                 throw new RuntimeException(e);
             }
         }
-        executorService.shutdown();
+        executor.shutdown();
         return PageInfo.of(toPage);
     }
 }
