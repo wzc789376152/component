@@ -49,7 +49,7 @@ public class PageUtils {
         executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(4);
         executor.setMaxPoolSize(8);
-        executor.setQueueCapacity(1000);
+        executor.setQueueCapacity(10000);
         executor.setThreadNamePrefix("pageResult-handle-");
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         executor.initialize();
