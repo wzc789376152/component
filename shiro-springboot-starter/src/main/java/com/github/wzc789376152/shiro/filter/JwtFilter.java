@@ -91,10 +91,6 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
                 break;
             }
         }
-        if (!isLogin && isTimeout) {
-            responseError(response, 402, "token已过期");
-            return false;
-        }
         if (isLogin) {
             UserInfo userInfo = (UserInfo) getSubject(request, response).getPrincipal();
             userInfo.setToken(token);
@@ -103,6 +99,10 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
         }
         if (IpUtil.checkIp(shiroJwtProperty.getIpWhileList())) {
             return true;
+        }
+        if (isTimeout) {
+            responseError(response, 402, "token已过期");
+            return false;
         }
         responseError(response, 401, "用户未登录");
         return false;
