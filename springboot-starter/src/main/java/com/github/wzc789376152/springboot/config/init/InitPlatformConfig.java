@@ -49,12 +49,17 @@ public class InitPlatformConfig extends InitConfig {
     private void initDb() {
         if (taskCenterProperties != null && taskCenterProperties.getEnable() && taskCenterProperties.getInitTable()) {
             String schemaName = DatabaseUtils.getJdbcTemplate().queryForObject("SELECT DATABASE()", String.class);
-            Integer count = DatabaseUtils.getJdbcTemplate().queryForObject("SELECT COUNT(1) FROM information_schema.TABLES WHERE TABLE_SCHEMA = '" + schemaName + "' AND TABLE_NAME = 'db_taskcenter';", Integer.class);
-            if (count == null || count == 0) {
+            Integer tempCount = DatabaseUtils.getJdbcTemplate().queryForObject("SELECT COUNT(1) FROM information_schema.TABLES WHERE TABLE_SCHEMA = '" + schemaName + "' AND TABLE_NAME = 'db_taskcenter_temp';", Integer.class);
+            if (tempCount == null || tempCount == 0) {
                 initDb("sql/db_taskcenter.sql");
             }
-            initDb("sql/db_taskcenter_update_v1.sql");
-            initDb("sql/db_taskcenter_update_v2.sql");
+            Integer count = DatabaseUtils.getJdbcTemplate().queryForObject("SELECT COUNT(1) FROM information_schema.TABLES WHERE TABLE_SCHEMA = '" + schemaName + "' AND TABLE_NAME = 'db_taskcenter';", Integer.class);
+            if (count == null || count == 0) {
+                DatabaseUtils.getJdbcTemplate().execute("CREATE TABLE IF NOT EXISTS db_taskcenter LIKE db_taskcenter_temp;");
+            } else {
+                DatabaseUtils.syncTable("db_taskcenter", "db_taskcenter_temp");
+            }
+            DatabaseUtils.getJdbcTemplate().execute("DROP TABLE db_taskcenter_temp;");
         }
         if (shardingPropertics != null && shardingPropertics.getInitTable() && yamlShardingRuleConfiguration != null && yamlShardingRuleConfiguration.getTables() != null && yamlShardingRuleConfiguration.getTables().size() > 0) {
             for (YamlTableRuleConfiguration yamlTableRuleConfiguration : yamlShardingRuleConfiguration.getTables().values()) {

@@ -1,1 +1,0 @@
-ALTER TABLE `db_taskcenter` DROP COLUMN `service_param`;
