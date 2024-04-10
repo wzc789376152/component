@@ -53,12 +53,8 @@ public class InitPlatformConfig extends InitConfig {
             if (count == null || count == 0) {
                 initDb("sql/db_taskcenter.sql");
             }
-            try {
-                initDb("sql/db_taskcenter_update_v1.sql");
-                initDb("sql/db_taskcenter_update_v2.sql");
-            } catch (Exception e) {
-                log.warn(e.getMessage());
-            }
+            initDb("sql/db_taskcenter_update_v1.sql");
+            initDb("sql/db_taskcenter_update_v2.sql");
         }
         if (shardingPropertics != null && shardingPropertics.getInitTable() && yamlShardingRuleConfiguration != null && yamlShardingRuleConfiguration.getTables() != null && yamlShardingRuleConfiguration.getTables().size() > 0) {
             for (YamlTableRuleConfiguration yamlTableRuleConfiguration : yamlShardingRuleConfiguration.getTables().values()) {
@@ -86,11 +82,15 @@ public class InitPlatformConfig extends InitConfig {
     }
 
     private void initDb(String sourceUrl) {
-        Resource resources = new ClassPathResource(sourceUrl);
-        ResourceDatabasePopulator resourceDatabasePopulator = new ResourceDatabasePopulator();
-        resourceDatabasePopulator.addScripts(resources);
-        if (dataSource != null) {
-            resourceDatabasePopulator.execute(dataSource);
+        try {
+            Resource resources = new ClassPathResource(sourceUrl);
+            ResourceDatabasePopulator resourceDatabasePopulator = new ResourceDatabasePopulator();
+            resourceDatabasePopulator.addScripts(resources);
+            if (dataSource != null) {
+                resourceDatabasePopulator.execute(dataSource);
+            }
+        } catch (Exception e) {
+            log.warn(e.getMessage());
         }
     }
 
