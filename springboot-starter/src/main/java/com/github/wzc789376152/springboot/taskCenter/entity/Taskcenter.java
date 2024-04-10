@@ -44,8 +44,8 @@ public class Taskcenter implements Serializable {
     @ApiModelProperty(value = "服务回调方法名")
     private String callbackServiceMethod;
 
-    @ApiModelProperty(value = "服务参数")
-    private String serviceParam;
+//    @ApiModelProperty(value = "服务参数")
+//    private String serviceParam;
 
     @ApiModelProperty(value = "错误信息")
     private String errorMsg;

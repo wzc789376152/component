@@ -14,12 +14,16 @@ import com.github.wzc789376152.springboot.config.SpringContextUtil;
 import com.github.wzc789376152.springboot.config.init.InitPropertice;
 import com.github.wzc789376152.springboot.config.oss.AliyunOssConfig;
 import com.github.wzc789376152.springboot.config.oss.AliyunOssService;
+import com.github.wzc789376152.springboot.config.redis.IRedisService;
 import com.github.wzc789376152.springboot.taskCenter.dto.TaskCenterInitDto;
 import com.github.wzc789376152.springboot.taskCenter.dto.TaskCenterUpdateDto;
 import com.github.wzc789376152.springboot.taskCenter.entity.Taskcenter;
 import com.github.wzc789376152.springboot.taskCenter.mapper.TaskcenterMapper;
+import com.github.wzc789376152.springboot.utils.CurrentHashMapUtil;
+import com.github.wzc789376152.springboot.utils.TaskCenterUtils;
 import com.github.wzc789376152.utils.ClassUtil;
 import com.github.wzc789376152.utils.JSONUtils;
+import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.redisson.api.RBucket;
@@ -34,6 +38,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class TaskCenterService<T> implements ITaskCenterService<T> {
@@ -85,14 +90,7 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
     }
 
     @Override
-    public <P> Integer initTask(String title, P param) {
-        List<P> list = new ArrayList<>();
-        list.add(param);
-        return initTask(title, list);
-    }
-
-    @Override
-    public <P> Integer initTask(String title, List<P> params) {
+    public <P> Integer initTask(Integer id, String title, List<P> params) {
         log.info("初始化任务:" + title);
         String data = JSONUtils.toJSONString(params);
         String serviceName = service.getClass().getName();
@@ -102,14 +100,37 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
         JSONObject paramObj = new JSONObject();
         paramObj.put("data", data);
         paramObj.put("name", params.get(0).getClass().getName());
-        TaskCenterInitDto taskCenterInitDto = new TaskCenterInitDto();
-        taskCenterInitDto.setTitle(title);
-        taskCenterInitDto.setServiceName(serviceName);
-        taskCenterInitDto.setFuncName(funcName);
-        taskCenterInitDto.setCallbackFuncName(callbackFuncName);
-        taskCenterInitDto.setServiceParam(paramObj.toJSONString());
-        taskCenterInitDto.setRunUrl(runUrl);
-        return taskCenterManager.initTask(taskCenterInitDto);
+        if (id != null) {
+            Taskcenter taskcenter = taskCenterManager.getTask(id);
+            if (taskcenter == null) {
+                id = null;
+            }
+        }
+        if (id == null) {
+            TaskCenterInitDto taskCenterInitDto = new TaskCenterInitDto();
+            taskCenterInitDto.setTitle(title);
+            taskCenterInitDto.setServiceName(serviceName);
+            taskCenterInitDto.setFuncName(funcName);
+            taskCenterInitDto.setCallbackFuncName(callbackFuncName);
+            taskCenterInitDto.setRunUrl(runUrl);
+            id = taskCenterManager.initTask(taskCenterInitDto);
+        }
+        IRedisService redisService = SpringContextUtil.getBean(IRedisService.class);
+        InitPropertice initPropertice = SpringContextUtil.getBean(InitPropertice.class);
+        String key = "taskCenter:" + initPropertice.getServerName() + ":serviceParam:" + id;
+        redisService.setCacheObject(key, paramObj, 7L, TimeUnit.DAYS);
+        CurrentHashMapUtil.put(key, paramObj, 1L, TimeUnit.DAYS);
+        return id;
+    }
+
+    @Override
+    public <P> Integer initTask(Integer id, String title, P param) {
+        return initTask(id, title, Lists.newArrayList(param));
+    }
+
+    @Override
+    public <P> Integer initTask(String title, P param) {
+        return initTask(null, title, Lists.newArrayList(param));
     }
 
     @Override
@@ -118,7 +139,7 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
         if (taskcenter == null) {
             return;
         }
-        JSONObject paramObj = JSON.parseObject(taskcenter.getServiceParam());
+        JSONObject paramObj = TaskCenterUtils.getParam(taskId);
         String name = paramObj.getString("name");
         String data = paramObj.getString("data");
         List<?> params;

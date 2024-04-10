@@ -2,8 +2,11 @@ package com.github.wzc789376152.springboot.utils;
 
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.thread.ThreadFactoryBuilder;
+import com.github.wzc789376152.utils.JSONUtils;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
@@ -54,31 +57,31 @@ public class CurrentHashMapUtil {
     /**
      * 每个缓存生效时间10秒
      */
-    public static final long CACHE_HOLD_TIME = 10 * 1000L;
+    public static final long CACHE_HOLD_TIME = 10L;
 
     /**
      * 存放一个缓存对象，默认保存时间10s
      *
      * @param cacheName 缓存名称
-     * @param obj 缓存值
+     * @param obj       缓存值
      */
-    public static void put(String cacheName, Object obj) {
-        put(cacheName, obj, CACHE_HOLD_TIME);
+    public static <T> void put(String cacheName, T obj) {
+        put(cacheName, obj, CACHE_HOLD_TIME, TimeUnit.SECONDS);
     }
 
     /**
      * 存放一个缓存对象，保存时间为holdTime
      *
      * @param cacheName 缓存名称
-     * @param obj 缓存值
-     * @param holdTime 过期时间
+     * @param obj       缓存值
+     * @param holdTime  过期时间
      */
-    public static void put(String cacheName, Object obj, long holdTime) {
+    public static <T> void put(String cacheName, T obj, long holdTime, TimeUnit timeUnit) {
         if (checkCacheName(cacheName)) {
             return;
         }
         CACHE_MAP.put(cacheName, obj);
-        CACHE_MAP_TIME.put(cacheName, System.currentTimeMillis() + holdTime);
+        CACHE_MAP_TIME.put(cacheName, System.currentTimeMillis() + timeUnit.toMillis(holdTime));
     }
 
     /**
@@ -87,11 +90,21 @@ public class CurrentHashMapUtil {
      * @param cacheName 缓存名称
      * @return Object
      */
-    public static Object get(String cacheName) {
+    public static <T> T get(String cacheName, Class<T> tClass) {
         if (checkCacheName(cacheName)) {
-            return CACHE_MAP.get(cacheName);
+            return JSONUtils.parse(CACHE_MAP.get(cacheName), tClass);
         }
         return null;
+    }
+
+    /**
+     * 取出数组
+     */
+    public static <T> List<T> getArray(String cacheName, Class<T> tClass) {
+        if (checkCacheName(cacheName)) {
+            return JSONUtils.parseArray(CACHE_MAP.get(cacheName), tClass);
+        }
+        return new ArrayList<>();
     }
 
     /**

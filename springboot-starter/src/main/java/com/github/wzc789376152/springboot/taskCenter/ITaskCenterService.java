@@ -4,9 +4,11 @@ import java.util.List;
 
 public interface ITaskCenterService<T> {
 
+    <P> Integer initTask(Integer id, String title, P param);
+
     <P> Integer initTask(String title, P param);
 
-    <P> Integer initTask(String title, List<P> params);
+    <P> Integer initTask(Integer id, String title, List<P> params);
 
     void runAsync(Integer taskId);
 

@@ -55,6 +55,7 @@ public class InitPlatformConfig extends InitConfig {
             }
             try {
                 initDb("sql/db_taskcenter_update_v1.sql");
+                initDb("sql/db_taskcenter_update_v2.sql");
             } catch (Exception e) {
                 log.warn(e.getMessage());
             }

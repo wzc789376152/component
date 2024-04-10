@@ -13,6 +13,7 @@ import com.github.pagehelper.PageInfo;
 import com.github.wzc789376152.exception.BizRuntimeException;
 import com.github.wzc789376152.springboot.config.SpringContextUtil;
 import com.github.wzc789376152.springboot.config.init.InitPropertice;
+import com.github.wzc789376152.springboot.config.redis.IRedisService;
 import com.github.wzc789376152.springboot.config.taskCenter.TaskCenterProperties;
 import com.github.wzc789376152.springboot.taskCenter.ITaskCenterManager;
 import com.github.wzc789376152.springboot.taskCenter.ITaskCenterService;
@@ -23,6 +24,7 @@ import com.github.wzc789376152.springboot.taskCenter.mapper.TaskcenterMapper;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class TaskCenterUtils {
     public static class Build<T> {
@@ -118,9 +120,7 @@ public class TaskCenterUtils {
             throw new BizRuntimeException("未配置任务中心");
         }
         TaskcenterMapper taskcenterMapper = SpringContextUtil.getBean(TaskcenterMapper.class);
-        Page<Taskcenter> page = PageHelper.startPage(pageNum, pageSize);
-        taskcenterMapper.selectList(wrapper);
-        return PageInfo.of(page);
+        return PageUtils.page(pageNum, pageSize).start(() -> taskcenterMapper.selectList(wrapper)).result(Taskcenter.class);
     }
 
     /**
@@ -155,7 +155,8 @@ public class TaskCenterUtils {
         taskCenterUpdateDto.setId(id);
         taskCenterUpdateDto.setStatus(2);
         taskcenterMapper.updateTask(taskCenterUpdateDto);
-        JSONObject paramObj = JSON.parseObject(taskcenter.getServiceParam());
+        //通过缓存拿请求参数
+        JSONObject paramObj = getParam(id);
         String name = paramObj.getString("name");
         String data = paramObj.getString("data");
         List<?> params;
@@ -166,6 +167,28 @@ public class TaskCenterUtils {
             throw new RuntimeException(e);
         }
         builder(taskcenter.getServiceName()).funcName(taskcenter.getServiceMethod()).callbackFuncName(taskcenter.getCallbackServiceMethod()).build().runAsync(taskcenter.getTitle(), taskcenter.getId(), params);
+    }
+
+    public static JSONObject getParam(Integer id) {
+        //通过缓存拿请求参数
+        IRedisService redisService = SpringContextUtil.getBean(IRedisService.class);
+        InitPropertice initPropertice = SpringContextUtil.getBean(InitPropertice.class);
+        String key = "taskCenter:" + initPropertice.getServerName() + ":serviceParam:" + id;
+        JSONObject paramObj = CurrentHashMapUtil.get(key, JSONObject.class);
+        if (paramObj == null) {
+            paramObj = redisService.getCacheObject(key, JSONObject.class);
+            if (paramObj == null) {
+                TaskCenterUpdateDto taskCenterUpdateDto = new TaskCenterUpdateDto();
+                taskCenterUpdateDto.setId(id);
+                taskCenterUpdateDto.setStatus(3);
+                taskCenterUpdateDto.setErrorMsg("请求参数不存在");
+                ITaskCenterManager taskcenterMapper = SpringContextUtil.getBean(ITaskCenterManager.class);
+                taskcenterMapper.updateTask(taskCenterUpdateDto);
+                throw new BizRuntimeException("请求参数不存在");
+            }
+            CurrentHashMapUtil.put(key, paramObj, 1L, TimeUnit.DAYS);
+        }
+        return paramObj;
     }
 
     /**

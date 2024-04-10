@@ -9,6 +9,6 @@ public class TaskCenterInitDto {
     String serviceName;
     String funcName;
     String callbackFuncName;
-    String serviceParam;
+//    String serviceParam;
     String runUrl;
 }

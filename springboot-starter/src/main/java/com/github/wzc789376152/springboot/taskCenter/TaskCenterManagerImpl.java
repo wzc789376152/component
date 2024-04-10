@@ -30,7 +30,6 @@ public class TaskCenterManagerImpl implements ITaskCenterManager {
             taskcenter.setServiceMethod(taskCenterInitDto.getFuncName());
             taskcenter.setCallbackServiceMethod(taskCenterInitDto.getCallbackFuncName());
             taskcenter.setRunUrl(taskCenterInitDto.getRunUrl());
-            taskcenter.setServiceParam(taskCenterInitDto.getServiceParam());
             taskcenter.setProgress(0);
             taskcenter.setStatus(0);
             taskcenterMapper.insert(taskcenter);

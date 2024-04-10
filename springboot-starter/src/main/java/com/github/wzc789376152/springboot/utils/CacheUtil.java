@@ -1,7 +1,6 @@
 package com.github.wzc789376152.springboot.utils;
 
 
-
 import com.github.wzc789376152.springboot.cache.CacheEnumInterface;
 import com.github.wzc789376152.springboot.cache.ICacheService;
 import com.github.wzc789376152.springboot.config.SpringContextUtil;
@@ -25,15 +24,15 @@ public class CacheUtil {
      * 采用内存、redis二级缓存，内存缓存保存10秒，redis缓存定时更新
      *
      * @param cacheEnum 缓存类型
-     * @param key 缓存key
-     * @param tClass 缓存类
-     * @param <T> T
+     * @param key       缓存key
+     * @param tClass    缓存类
+     * @param <T>       T
      * @return T
      */
     protected static <T> T getCache(CacheEnumInterface cacheEnum, String key, Class<T> tClass) {
-        Object obj = CurrentHashMapUtil.get(cacheEnum.getKey() + "_" + key);
+        T obj = CurrentHashMapUtil.get(cacheEnum.getKey() + "_" + key, tClass);
         if (obj != null) {
-            return (T) obj;
+            return obj;
         }
         T cacheData = getCacheService().getCache(cacheEnum, key, tClass);
         if (cacheData != null) {
@@ -43,9 +42,9 @@ public class CacheUtil {
     }
 
     protected static <T> List<T> getCache(CacheEnumInterface cacheEnum, Class<T> tClass) {
-        Object obj = CurrentHashMapUtil.get(cacheEnum.getKey() + "_list");
+        List<T> obj = CurrentHashMapUtil.getArray(cacheEnum.getKey() + "_list", tClass);
         if (obj != null) {
-            return (List<T>) obj;
+            return obj;
         }
         Map<String, T> map = getCacheService().getCacheMap(cacheEnum, tClass);
         if (map != null) {
