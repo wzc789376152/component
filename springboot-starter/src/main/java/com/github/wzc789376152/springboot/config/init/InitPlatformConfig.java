@@ -3,6 +3,7 @@ package com.github.wzc789376152.springboot.config.init;
 
 import com.github.wzc789376152.springboot.config.shardingsphere.ShardingPropertics;
 import com.github.wzc789376152.springboot.config.taskCenter.TaskCenterProperties;
+import com.github.wzc789376152.springboot.utils.DatabaseUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.shardingsphere.sharding.support.InlineExpressionParser;
 import org.apache.shardingsphere.sharding.yaml.config.YamlShardingRuleConfiguration;
@@ -33,8 +34,6 @@ public class InitPlatformConfig extends InitConfig {
     private TaskCenterProperties taskCenterProperties;
     @Autowired(required = false)
     private ShardingPropertics shardingPropertics;
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
     @Autowired(required = false)
     private YamlShardingRuleConfiguration yamlShardingRuleConfiguration;
 
@@ -49,7 +48,11 @@ public class InitPlatformConfig extends InitConfig {
 
     private void initDb() {
         if (taskCenterProperties != null && taskCenterProperties.getEnable() && taskCenterProperties.getInitTable()) {
-            initDb("sql/db_taskcenter.sql");
+            String schemaName = DatabaseUtils.getJdbcTemplate().queryForObject("SELECT DATABASE()", String.class);
+            Integer count = DatabaseUtils.getJdbcTemplate().queryForObject("SELECT COUNT(1) FROM information_schema.TABLES WHERE TABLE_SCHEMA = '" + schemaName + "' AND TABLE_NAME = 'db_taskcenter';", Integer.class);
+            if (count == null || count == 0) {
+                initDb("sql/db_taskcenter.sql");
+            }
             try {
                 initDb("sql/db_taskcenter_update_v1.sql");
             } catch (Exception e) {
@@ -66,7 +69,12 @@ public class InitPlatformConfig extends InitConfig {
                         String lastTableName = getTableName(tableList.get(i - 1));
                         String tableName = getTableName(tableList.get(i));
                         try {
-                            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS " + tableName + " LIKE " + lastTableName + ";");
+                            String schemaName = DatabaseUtils.getJdbcTemplate().queryForObject("SELECT DATABASE()", String.class);
+                            Integer tableCount = DatabaseUtils.getJdbcTemplate().queryForObject("SELECT COUNT(1) FROM information_schema.TABLES WHERE TABLE_SCHEMA = '" + schemaName + "' AND TABLE_NAME = '" + tableName + "';", Integer.class);
+                            Integer lastTableCount = DatabaseUtils.getJdbcTemplate().queryForObject("SELECT COUNT(1) FROM information_schema.TABLES WHERE TABLE_SCHEMA = '" + schemaName + "' AND TABLE_NAME = '" + lastTableName + "';", Integer.class);
+                            if ((tableCount == null || tableCount == 0) && (lastTableCount != null && lastTableCount > 0)) {
+                                DatabaseUtils.getJdbcTemplate().execute("CREATE TABLE IF NOT EXISTS " + tableName + " LIKE " + lastTableName + ";");
+                            }
                         } catch (Exception e) {
                             log.warn("表创建失败,{}", e.getMessage());
                         }
