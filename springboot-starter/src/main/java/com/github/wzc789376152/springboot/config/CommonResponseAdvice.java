@@ -1,6 +1,7 @@
 package com.github.wzc789376152.springboot.config;
 
 
+import com.alibaba.fastjson.JSONObject;
 import com.github.wzc789376152.exception.BizRuntimeException;
 import com.github.wzc789376152.exception.SystemException;
 import com.github.wzc789376152.service.IResponseService;
@@ -60,6 +61,13 @@ public abstract class CommonResponseAdvice implements ResponseBodyAdvice<Object>
     public Object beforeBodyWrite(Object o, MethodParameter methodParameter, MediaType mediaType, Class aClass, ServerHttpRequest serverHttpRequest, ServerHttpResponse serverHttpResponse) {
         List<String> headerList = serverHttpRequest.getHeaders().get("FeignResultFormat");
         String traceId = getTraceId();
+        if (o != null) {
+            if (o instanceof String) {
+                if (((String) o).length() >= 2 && ((String) o).startsWith("\"") && ((String) o).endsWith("\"")) {
+                    o = JSONObject.parse((String) o);
+                }
+            }
+        }
         if (headerList == null || !headerList.get(0).equals("true")) {
             NoResultFormatter noResultFormatter = AnnotationUtils.findAnnotation(Objects.requireNonNull(methodParameter.getMethod()), NoResultFormatter.class);
             if (noResultFormatter == null) {
