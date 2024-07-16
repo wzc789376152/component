@@ -6,17 +6,17 @@
     <parent>
         <groupId>com.github.wzc789376152</groupId>
         <artifactId>parent</artifactId>
-        <version>2.0.9</version>
+        <version>2.1.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <properties>
-        <project.release.version>2.0.9</project.release.version>
+        <project.release.version>${wzc.file.version}</project.release.version>
     </properties>
     <profiles>
         <profile>
             <id>snapshot</id>
             <properties>
-                <project.release.version>2.0.9-SNAPSHOT</project.release.version>
+                <project.release.version>${wzc.file.version}-SNAPSHOT</project.release.version>
             </properties>
         </profile>
     </profiles>
