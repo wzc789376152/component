@@ -35,15 +35,12 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class TaskCenterService<T> implements ITaskCenterService<T> {
-    private final T service;
+public class TaskCenterService implements ITaskCenterService {
+    private final Object service;
 
     private final String funcName;
     private final Method method;
@@ -52,32 +49,12 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
 
     private final Method callbackFunc;
 
-//    private final TaskcenterMapper taskcenterMapper;
-
     private final String runUrl;
 
     private final ITaskCenterManager taskCenterManager;
 
-    public TaskCenterService(T service, String funcName, String callbackFuncName, String runUrl) {
+    public TaskCenterService(Object service, String funcName, String callbackFuncName, String runUrl) {
         this.service = service;
-        this.funcName = funcName;
-        this.method = ClassUtil.getMethod(service.getClass(), funcName);
-        this.callbackFuncName = callbackFuncName;
-        if (StringUtils.isNotEmpty(callbackFuncName)) {
-            this.callbackFunc = ClassUtil.getMethod(service.getClass(), callbackFuncName);
-        } else {
-            this.callbackFunc = null;
-        }
-        this.taskCenterManager = SpringContextUtil.getBean(ITaskCenterManager.class);
-        this.runUrl = runUrl;
-    }
-
-    public TaskCenterService(String serviceName, String funcName, String callbackFuncName, String runUrl) {
-        try {
-            this.service = (T) SpringContextUtil.getBean(Class.forName(serviceName));
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
         this.funcName = funcName;
         this.method = ClassUtil.getMethod(service.getClass(), funcName);
         if (this.method == null) {
@@ -91,6 +68,10 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
         }
         this.taskCenterManager = SpringContextUtil.getBean(ITaskCenterManager.class);
         this.runUrl = runUrl;
+    }
+
+    public TaskCenterService(String serviceName, String funcName, String callbackFuncName, String runUrl) throws ClassNotFoundException {
+        this(SpringContextUtil.getBean(Class.forName(serviceName)), funcName, callbackFuncName, runUrl);
     }
 
     @Override
@@ -224,11 +205,20 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
         executor.setThreadNamePrefix("taskCenterItem-handle-");
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         executor.initialize();
-        ExecutorService executorService = TtlExecutors.getTtlExecutorService(executor.getThreadPoolExecutor());
+        ExecutorService taskItemExecutor = TtlExecutors.getTtlExecutorService(executor.getThreadPoolExecutor());
+
+        ThreadPoolTaskExecutor executor1 = new ThreadPoolTaskExecutor();
+        executor1.setCorePoolSize(1);
+        executor1.setMaxPoolSize(1);
+        executor1.setQueueCapacity(100);
+        executor1.setThreadNamePrefix("taskCenterUpdate-handle-");
+        executor1.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor1.initialize();
+        ExecutorService taskUpdateExecutor = TtlExecutors.getTtlExecutorService(executor1.getThreadPoolExecutor());
         try {
             List<Future<Object>> futureList = new ArrayList<>();
             for (P param : params) {
-                futureList.add(executorService.submit(() -> method.invoke(service, param)));
+                futureList.add(taskItemExecutor.submit(() -> method.invoke(service, param)));
             }
             List<Object> resultList = new ArrayList<>();
             int total = futureList.isEmpty() ? 1 : futureList.size();
@@ -249,14 +239,17 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
                     resultList.addAll((List) result);
                 }
                 int process = count * 100 / (total * 2);
-                Taskcenter taskcenter1 = taskCenterManager.getTask(taskId);
-                if (taskcenter1.getProgress() < process) {
-                    TaskCenterUpdateDto taskCenterUpdateDto = new TaskCenterUpdateDto();
-                    taskCenterUpdateDto.setId(taskId);
-                    taskCenterUpdateDto.setStatus(1);
-                    taskCenterUpdateDto.setProgress(process);
-                    taskCenterManager.updateTask(taskCenterUpdateDto);
-                }
+                Future future1 = taskUpdateExecutor.submit(() -> {
+                    Taskcenter taskcenter1 = taskCenterManager.getTask(taskId);
+                    if (taskcenter1.getProgress() < process) {
+                        TaskCenterUpdateDto taskCenterUpdateDto = new TaskCenterUpdateDto();
+                        taskCenterUpdateDto.setId(taskId);
+                        taskCenterUpdateDto.setStatus(1);
+                        taskCenterUpdateDto.setProgress(process);
+                        taskCenterManager.updateTask(taskCenterUpdateDto);
+                    }
+                });
+                future1.get();
             }
 //            for (Future<Boolean> future : updateFutureList) {
 //                future.get();
@@ -298,7 +291,8 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
             taskCenterUpdateDto.setProgress(100);
             taskCenterUpdateDto.setUrl(url);
             taskCenterUpdateDto.setErrorMsg("");
-            taskCenterManager.updateTask(taskCenterUpdateDto);
+            Future future1 = taskUpdateExecutor.submit(() -> taskCenterManager.updateTask(taskCenterUpdateDto));
+            future1.get();
             callbackMap.put("success", true);
             callbackMap.put("url", url);
         } catch (Exception e) {
@@ -307,11 +301,15 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
             taskCenterUpdateDto.setId(taskId);
             taskCenterUpdateDto.setErrorMsg(e.getMessage());
             taskCenterUpdateDto.setStatus(3);
-            taskCenterManager.updateTask(taskCenterUpdateDto);
+            Future future1 = taskUpdateExecutor.submit(() -> taskCenterManager.updateTask(taskCenterUpdateDto));
+            try {
+                future1.get();
+            } catch (InterruptedException | ExecutionException ex) {
+            }
             callbackMap.put("success", false);
             callbackMap.put("error", e.getMessage());
         } finally {
-            executor.shutdown();
+            taskItemExecutor.shutdown();
             rBucket.delete();
         }
         log.info("任务结束:" + title);

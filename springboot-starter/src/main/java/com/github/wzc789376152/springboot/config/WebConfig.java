@@ -11,6 +11,7 @@ import com.github.wzc789376152.service.IResponseService;
 import com.github.wzc789376152.service.impl.ResponseServiceImpl;
 import com.github.wzc789376152.springboot.annotation.AppRestController;
 import com.github.wzc789376152.springboot.annotation.OpenRestController;
+import com.github.wzc789376152.springboot.utils.MDCUtils;
 import com.github.wzc789376152.utils.DateUtils;
 import io.netty.util.internal.StringUtil;
 import org.apache.commons.lang3.StringUtils;
@@ -103,13 +104,13 @@ public class WebConfig implements WebMvcConfigurer {
             if (StringUtils.isEmpty(traceId)) {
                 traceId = UUID.randomUUID().toString().replace("-", "");
             }
-            MDC.put("traceId", traceId);
+            MDCUtils.put("traceId", traceId);
             return true;
         }
 
         @Override
         public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
-            MDC.remove("traceId");
+            MDCUtils.remove("traceId");
         }
     }
 

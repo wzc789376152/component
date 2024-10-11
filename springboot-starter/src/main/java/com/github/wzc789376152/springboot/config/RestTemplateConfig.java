@@ -1,6 +1,7 @@
 package com.github.wzc789376152.springboot.config;
 
 import cn.hutool.core.net.URLEncoder;
+import com.github.wzc789376152.springboot.utils.MDCUtils;
 import com.github.wzc789376152.utils.TokenUtils;
 import com.github.wzc789376152.vo.UserInfo;
 import org.slf4j.MDC;
@@ -50,7 +51,7 @@ public class RestTemplateConfig {
                 setToken(request, userInfo.getToken());
             }
             request.getHeaders().set("FeignResultFormat", "true");
-            request.getHeaders().set("traceId", MDC.get("traceId"));
+            request.getHeaders().set("traceId", MDCUtils.get("traceId"));
             return execution.execute(request, body);
         }
 

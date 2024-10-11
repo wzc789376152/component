@@ -27,8 +27,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class TaskCenterUtils {
-    public static class Build<T> {
-        private T service;
+    public static class Build {
+        private Object service;
 
         private String serviceName;
 
@@ -38,7 +38,7 @@ public class TaskCenterUtils {
 
         private String runUrl;
 
-        public Build(T service) {
+        public Build(Object service) {
             this.service = service;
         }
 
@@ -46,33 +46,33 @@ public class TaskCenterUtils {
             this.serviceName = serviceName;
         }
 
-        public Build<T> funcName(String funcName) {
+        public Build funcName(String funcName) {
             this.funcName = funcName;
             return this;
         }
 
-        public <I, R> Build<T> func(SFunction<I, R> sFunction) {
+        public <I, R> Build func(SFunction<I, R> sFunction) {
             this.funcName = LambdaUtils.extract(sFunction).getImplMethodName();
             return this;
         }
 
-        public Build<T> callbackFuncName(String funcName) {
+        public Build callbackFuncName(String funcName) {
             this.callbackFuncName = funcName;
             return this;
         }
 
 
-        public <I, R> Build<T> callbackFunc(SFunction<I, R> sFunction) {
+        public <I, R> Build callbackFunc(SFunction<I, R> sFunction) {
             this.callbackFuncName = LambdaUtils.extract(sFunction).getImplMethodName();
             return this;
         }
 
-        public Build<T> runUrl(String runUrl) {
+        public Build runUrl(String runUrl) {
             this.runUrl = runUrl;
             return this;
         }
 
-        public ITaskCenterService<T> build() {
+        public ITaskCenterService build() {
             TaskCenterProperties taskCenterProperties = SpringContextUtil.getBean(TaskCenterProperties.class);
             if (!taskCenterProperties.getEnable()) {
                 throw new BizRuntimeException("未配置任务中心");
@@ -82,10 +82,14 @@ public class TaskCenterUtils {
                 runUrl = "http://" + initPropertice.getServerName() + "/taskCenterBase/redo";
             }
             if (service != null) {
-                return new TaskCenterService<>(service, funcName, callbackFuncName, runUrl);
+                return new TaskCenterService(service, funcName, callbackFuncName, runUrl);
             }
             if (serviceName != null) {
-                return new TaskCenterService<>(serviceName, funcName, callbackFuncName, runUrl);
+                try {
+                    return new TaskCenterService(serviceName, funcName, callbackFuncName, runUrl);
+                } catch (ClassNotFoundException exception) {
+                    return null;
+                }
             }
             return null;
         }
@@ -98,12 +102,12 @@ public class TaskCenterUtils {
      * @param <T>     服务类型
      * @return T
      */
-    public static <T> Build<T> builder(T service) {
-        return new Build<>(service);
+    public static <T> Build builder(T service) {
+        return new Build(service);
     }
 
-    public static <T> Build<T> builder(String serviceName) {
-        return new Build<>(serviceName);
+    public static <T> Build builder(String serviceName) {
+        return new Build(serviceName);
     }
 
     /**

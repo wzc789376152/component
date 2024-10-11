@@ -2,7 +2,7 @@ package com.github.wzc789376152.springboot.taskCenter;
 
 import java.util.List;
 
-public interface ITaskCenterService<T> {
+public interface ITaskCenterService {
 
     <P> Integer initTask(Integer id, String title, P param);
 
