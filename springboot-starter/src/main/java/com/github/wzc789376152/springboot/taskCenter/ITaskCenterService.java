@@ -6,6 +6,8 @@ public interface ITaskCenterService<T> {
 
     <P> Integer initTask(Integer id, String title, P param);
 
+    <P> Integer initTask(String title, List<P> param);
+
     <P> Integer initTask(String title, P param);
 
     <P> Integer initTask(Integer id, String title, List<P> params);

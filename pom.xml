@@ -70,7 +70,7 @@
         <jodatime.version>2.9.9</jodatime.version>
         <mysql.version>8.0.19</mysql.version>
         <wzc.common.version>2.1.5</wzc.common.version>
-        <wzc.springboot.version>2.2.8</wzc.springboot.version>
+        <wzc.springboot.version>2.3.0</wzc.springboot.version>
         <wzc.file.version>2.1.1</wzc.file.version>
         <wzc.shiro.version>2.1.5</wzc.shiro.version>
     </properties>

@@ -33,6 +33,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -79,6 +80,9 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
         }
         this.funcName = funcName;
         this.method = ClassUtil.getMethod(service.getClass(), funcName);
+        if (this.method == null) {
+            throw new RuntimeException("方法初始化失败");
+        }
         this.callbackFuncName = callbackFuncName;
         if (StringUtils.isNotEmpty(callbackFuncName)) {
             this.callbackFunc = ClassUtil.getMethod(service.getClass(), callbackFuncName);
@@ -126,6 +130,11 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
     @Override
     public <P> Integer initTask(Integer id, String title, P param) {
         return initTask(id, title, Lists.newArrayList(param));
+    }
+
+    @Override
+    public <P> Integer initTask(String title, List<P> param) {
+        return initTask(null, title, param);
     }
 
     @Override
@@ -189,6 +198,7 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
         TaskCenterUpdateDto taskCenterUpdateDto = new TaskCenterUpdateDto();
         taskCenterUpdateDto.setId(taskId);
         taskCenterUpdateDto.setStatus(1);
+        taskCenterUpdateDto.setProgress(0);
         taskCenterManager.updateTask(taskCenterUpdateDto);
         ExecutorService executorService = SpringContextUtil.getBean("taskCenterAsync", ExecutorService.class);
         Integer finalTaskId = taskId;
@@ -223,52 +233,64 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
             List<Object> resultList = new ArrayList<>();
             int total = futureList.isEmpty() ? 1 : futureList.size();
             int count = 0;
-            ThreadPoolTaskExecutor executor1 = new ThreadPoolTaskExecutor();
-            executor1.setCorePoolSize(16);
-            executor1.setMaxPoolSize(32);
-            executor1.setQueueCapacity(100000);
-            executor1.setThreadNamePrefix("taskCenterItemUpdate-handle-");
-            executor1.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-            executor1.initialize();
-            ExecutorService executorService1 = TtlExecutors.getTtlExecutorService(executor1.getThreadPoolExecutor());
-            List<Future<Boolean>> updateFutureList = new ArrayList<>();
+//            ThreadPoolTaskExecutor executor1 = new ThreadPoolTaskExecutor();
+//            executor1.setCorePoolSize(16);
+//            executor1.setMaxPoolSize(32);
+//            executor1.setQueueCapacity(100000);
+//            executor1.setThreadNamePrefix("taskCenterItemUpdate-handle-");
+//            executor1.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+//            executor1.initialize();
+//            ExecutorService executorService1 = TtlExecutors.getTtlExecutorService(executor1.getThreadPoolExecutor());
+//            List<Future<Boolean>> updateFutureList = new ArrayList<>();
             for (Future<Object> future : futureList) {
                 Object result = future.get();
                 count++;
                 if (result instanceof List) {
                     resultList.addAll((List) result);
                 }
-                int finalCount = count;
-                updateFutureList.add(executorService1.submit(() -> {
-                    int process = finalCount * 100 / total;
-                    Taskcenter taskcenter1 = taskCenterManager.getTask(taskId);
-                    if (taskcenter1.getProgress() < process) {
-                        TaskCenterUpdateDto taskCenterUpdateDto = new TaskCenterUpdateDto();
-                        taskCenterUpdateDto.setId(taskId);
-                        taskCenterUpdateDto.setStatus(1);
-                        taskCenterUpdateDto.setProgress(process);
-                        taskCenterManager.updateTask(taskCenterUpdateDto);
-                    }
-                    return true;
-                }));
+                int process = count * 100 / (total * 2);
+                Taskcenter taskcenter1 = taskCenterManager.getTask(taskId);
+                if (taskcenter1.getProgress() < process) {
+                    TaskCenterUpdateDto taskCenterUpdateDto = new TaskCenterUpdateDto();
+                    taskCenterUpdateDto.setId(taskId);
+                    taskCenterUpdateDto.setStatus(1);
+                    taskCenterUpdateDto.setProgress(process);
+                    taskCenterManager.updateTask(taskCenterUpdateDto);
+                }
             }
-            for (Future<Boolean> future : updateFutureList) {
-                future.get();
-            }
+//            for (Future<Boolean> future : updateFutureList) {
+//                future.get();
+//            }
             String url = "";
             if (!resultList.isEmpty()) {
+                List<List<Object>> splitList = splitList(resultList, 1000000);
+                String filePath = System.getProperty("user.dir") + "/excel";
+                File file = new File(filePath);
+                if (!file.exists()) {
+                    file.mkdirs();
+                }
+                filePath = filePath + "/" + UUID.randomUUID() + ExcelTypeEnum.XLSX.getValue();
+                file = new File(filePath);
+                OutputStream outputStream = Files.newOutputStream(file.toPath());
                 //保存excel文件至sso
-                ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                ExcelWriter writer = EasyExcel.write(byteArrayOutputStream).build();
-                WriteSheet orderSheet = EasyExcel.writerSheet(0, title).head(resultList.get(0).getClass()).build();
-                writer.write(resultList, orderSheet);
+                ExcelWriter writer = EasyExcel.write(outputStream).excelType(ExcelTypeEnum.XLSX).build();
+                for (int i = 0; i < splitList.size(); i++) {
+                    for (List<Object> list : splitList(splitList.get(i), 10000)) {
+                        WriteSheet orderSheet = EasyExcel.writerSheet(i, "sheet" + (i + 1)).head(resultList.get(0).getClass()).build();
+                        writer.write(list, orderSheet);
+                    }
+                }
                 writer.finish();
-                String fileName = "excel/" + title + ExcelTypeEnum.XLSX.getValue();
+                String fileName = "excel/" + UUID.randomUUID().toString().replace("-", "") + "---" + title + ExcelTypeEnum.XLSX.getValue();
                 IFileService fileService = SpringContextUtil.getBean(IFileService.class);
-                InputStream inputStream = new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
+                InputStream inputStream = Files.newInputStream(file.toPath());
                 fileService.uploadCache(inputStream, fileName);
                 fileService.submit(fileName);
                 url = fileService.getDownloadUrl(fileName);
+                try {
+                    Files.deleteIfExists(file.toPath());
+                } catch (Exception e) {
+                }
             }
             TaskCenterUpdateDto taskCenterUpdateDto = new TaskCenterUpdateDto();
             taskCenterUpdateDto.setId(taskId);
@@ -302,4 +324,23 @@ public class TaskCenterService<T> implements ITaskCenterService<T> {
             }
         }
     }
+
+    /**
+     * 将大 List 拆分成小 List，每个小 List 包含指定数量的元素
+     *
+     * @param sourceList 源大 List
+     * @param chunkSize  每个小 List 的大小
+     * @return 拆分后的 List 的 List
+     */
+    private List<List<Object>> splitList(List<Object> sourceList, int chunkSize) {
+        List<List<Object>> result = new ArrayList<>();
+
+        for (int i = 0; i < sourceList.size(); i += chunkSize) {
+            int end = Math.min(i + chunkSize, sourceList.size());
+            result.add(new ArrayList<>(sourceList.subList(i, end)));
+        }
+
+        return result;
+    }
+
 }
