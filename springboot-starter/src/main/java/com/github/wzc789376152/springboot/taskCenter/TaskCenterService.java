@@ -187,132 +187,117 @@ public class TaskCenterService implements ITaskCenterService {
     }
 
     private <P> void run(String title, Integer taskId, P... params) {
+        // 获取分布式锁，避免重复执行
         RedissonClient redissonClient = SpringContextUtil.getBean(RedissonClient.class);
-        RBucket<Object> rBucket = redissonClient.getBucket("redisson:taskCenter:" + title + ":" + taskId);
-        boolean isLock = rBucket.trySet(1, 3600L, TimeUnit.SECONDS);
-        if (!isLock) {//等待下次执行
-            return;
+        String lockKey = "redisson:taskCenter:" + title + ":" + taskId;
+        RBucket<Object> lockBucket = redissonClient.getBucket(lockKey);
+        if (!lockBucket.trySet(1, 3600L, TimeUnit.SECONDS)) {
+            return; // 未获得锁，退出
         }
-        log.info("开始执行任务:" + title);
+
+        log.info("开始执行任务: {}", title);
         Map<String, Object> callbackMap = new HashMap<>();
         callbackMap.put("taskId", taskId);
         callbackMap.put("data", JSONUtils.toJSONString(params));
         callbackMap.put("startTime", System.currentTimeMillis());
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(16);
-        executor.setMaxPoolSize(32);
-        executor.setQueueCapacity(100000);
-        executor.setThreadNamePrefix("taskCenterItem-handle-");
-        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-        executor.initialize();
-        ExecutorService taskItemExecutor = TtlExecutors.getTtlExecutorService(executor.getThreadPoolExecutor());
 
-        ThreadPoolTaskExecutor executor1 = new ThreadPoolTaskExecutor();
-        executor1.setCorePoolSize(1);
-        executor1.setMaxPoolSize(1);
-        executor1.setQueueCapacity(100);
-        executor1.setThreadNamePrefix("taskCenterUpdate-handle-");
-        executor1.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-        executor1.initialize();
-        ExecutorService taskUpdateExecutor = TtlExecutors.getTtlExecutorService(executor1.getThreadPoolExecutor());
+        // 创建两个线程池：任务执行和任务进度更新
+        ExecutorService taskExecutor = createExecutorService(16, 32, 100000, "taskCenterItem-handle-");
+        ExecutorService progressExecutor = createExecutorService(1, 1, 100, "taskCenterUpdate-handle-");
+
+        // Excel 相关变量
+        boolean isExcelGenerated = false;
+        ExcelWriter excelWriter = null;
+        BufferedOutputStream bufferedOutputStream = null;
+        File excelFile = null;
+        int sheetIndex = 0;
+        int excelRowCount = 0;
+
         try {
-            List<Future<Object>> futureList = new ArrayList<>();
+            List<Future<Object>> futures = new ArrayList<>();
             for (P param : params) {
-                futureList.add(taskItemExecutor.submit(() -> method.invoke(service, param)));
+                futures.add(taskExecutor.submit(() -> method.invoke(service, param)));
             }
-            List<Object> resultList = new ArrayList<>();
-            int total = futureList.isEmpty() ? 1 : futureList.size();
-            int count = 0;
-//            ThreadPoolTaskExecutor executor1 = new ThreadPoolTaskExecutor();
-//            executor1.setCorePoolSize(16);
-//            executor1.setMaxPoolSize(32);
-//            executor1.setQueueCapacity(100000);
-//            executor1.setThreadNamePrefix("taskCenterItemUpdate-handle-");
-//            executor1.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-//            executor1.initialize();
-//            ExecutorService executorService1 = TtlExecutors.getTtlExecutorService(executor1.getThreadPoolExecutor());
-//            List<Future<Boolean>> updateFutureList = new ArrayList<>();
-            for (Future<Object> future : futureList) {
+            int totalTasks = Math.max(futures.size(), 1);
+            int completedTasks = 0;
+
+            // 遍历各个任务执行结果
+            for (Future<Object> future : futures) {
                 Object result = future.get();
-                count++;
+                completedTasks++;
+
+                // 如果返回结果为 List，则写入 Excel
                 if (result instanceof List) {
-                    resultList.addAll((List) result);
-                }
-                int process = count * 100 / (total * 2);
-                Future future1 = taskUpdateExecutor.submit(() -> {
-                    Taskcenter taskcenter1 = taskCenterManager.getTask(taskId);
-                    if (taskcenter1.getProgress() < process) {
-                        TaskCenterUpdateDto taskCenterUpdateDto = new TaskCenterUpdateDto();
-                        taskCenterUpdateDto.setId(taskId);
-                        taskCenterUpdateDto.setStatus(1);
-                        taskCenterUpdateDto.setProgress(process);
-                        taskCenterManager.updateTask(taskCenterUpdateDto);
+                    List<?> resultList = (List<?>) result;
+                    if (!resultList.isEmpty()) {
+                        // 延迟初始化 ExcelWriter（只在首次写入数据时初始化）
+                        if (!isExcelGenerated) {
+                            isExcelGenerated = true;
+                            excelFile = createExcelFile();
+                            bufferedOutputStream = new BufferedOutputStream(Files.newOutputStream(excelFile.toPath()));
+                            excelWriter = EasyExcel.write(bufferedOutputStream)
+                                    .excelType(ExcelTypeEnum.XLSX)
+                                    .build();
+                        }
+                        // 按每 10000 条记录分批写入，超过 100 万条记录换新 sheet
+                        for (List<Object> batch : splitList((List<Object>) resultList, 10000)) {
+                            if (excelWriter != null) {
+                                if (excelRowCount >= 1_000_000) {
+                                    excelRowCount = 0;
+                                    sheetIndex++;
+                                }
+                                WriteSheet sheet = EasyExcel.writerSheet(sheetIndex, "sheet" + (sheetIndex + 1))
+                                        .head(resultList.get(0).getClass())
+                                        .build();
+                                excelWriter.write(batch, sheet);
+                                excelRowCount += batch.size();
+                            }
+                        }
                     }
-                });
-                future1.get();
+                }
+                // 异步更新进度（任务项完成占总进度的一半）
+                final int progress = completedTasks * 90 / totalTasks;
+                progressExecutor.submit(() -> updateTaskProgress(taskId, progress));
             }
-//            for (Future<Boolean> future : updateFutureList) {
-//                future.get();
-//            }
+
             String url = "";
-            if (!resultList.isEmpty()) {
-                List<List<Object>> splitList = splitList(resultList, 1000000);
-                String filePath = System.getProperty("user.dir") + "/excel";
-                File file = new File(filePath);
-                if (!file.exists()) {
-                    file.mkdirs();
-                }
-                filePath = filePath + "/" + UUID.randomUUID() + ExcelTypeEnum.XLSX.getValue();
-                file = new File(filePath);
-                OutputStream outputStream = Files.newOutputStream(file.toPath());
-                //保存excel文件至sso
-                ExcelWriter writer = EasyExcel.write(outputStream).excelType(ExcelTypeEnum.XLSX).build();
-                for (int i = 0; i < splitList.size(); i++) {
-                    for (List<Object> list : splitList(splitList.get(i), 10000)) {
-                        WriteSheet orderSheet = EasyExcel.writerSheet(i, "sheet" + (i + 1)).head(resultList.get(0).getClass()).build();
-                        writer.write(list, orderSheet);
-                    }
-                }
-                writer.finish();
-                String fileName = "excel/" + UUID.randomUUID().toString().replace("-", "") + "---" + title + ExcelTypeEnum.XLSX.getValue();
-                IFileService fileService = SpringContextUtil.getBean(IFileService.class);
-                InputStream inputStream = Files.newInputStream(file.toPath());
-                fileService.uploadCache(inputStream, fileName);
-                fileService.submit(fileName);
-                url = fileService.getDownloadUrl(fileName);
-                try {
-                    Files.deleteIfExists(file.toPath());
-                } catch (Exception e) {
-                }
+            // 如果有 Excel 数据，结束写入并上传文件
+            if (isExcelGenerated && excelWriter != null) {
+                excelWriter.finish();
+                url = uploadExcelFile(excelFile, title);
             }
-            TaskCenterUpdateDto taskCenterUpdateDto = new TaskCenterUpdateDto();
-            taskCenterUpdateDto.setId(taskId);
-            taskCenterUpdateDto.setStatus(4);
-            taskCenterUpdateDto.setProgress(100);
-            taskCenterUpdateDto.setUrl(url);
-            taskCenterUpdateDto.setErrorMsg("");
-            Future future1 = taskUpdateExecutor.submit(() -> taskCenterManager.updateTask(taskCenterUpdateDto));
-            future1.get();
+            updateTaskCompletion(taskId, url);
             callbackMap.put("success", true);
             callbackMap.put("url", url);
         } catch (Exception e) {
             log.error("任务失败", e);
-            TaskCenterUpdateDto taskCenterUpdateDto = new TaskCenterUpdateDto();
-            taskCenterUpdateDto.setId(taskId);
-            taskCenterUpdateDto.setErrorMsg(e.getMessage());
-            taskCenterUpdateDto.setStatus(3);
-            Future future1 = taskUpdateExecutor.submit(() -> taskCenterManager.updateTask(taskCenterUpdateDto));
-            try {
-                future1.get();
-            } catch (InterruptedException | ExecutionException ex) {
-            }
+            updateTaskFailure(taskId, e.getMessage());
             callbackMap.put("success", false);
             callbackMap.put("error", e.getMessage());
         } finally {
-            taskItemExecutor.shutdown();
-            rBucket.delete();
+            // 优雅关闭线程池和释放锁
+            taskExecutor.shutdown();
+            progressExecutor.shutdown();
+            lockBucket.delete();
+
+            // 确保 ExcelWriter 和输出流被正确关闭
+            if (excelWriter != null) {
+                try {
+                    excelWriter.finish();
+                } catch (Exception ex) {
+                    log.error("关闭ExcelWriter异常", ex);
+                }
+            }
+            if (bufferedOutputStream != null) {
+                try {
+                    bufferedOutputStream.close();
+                } catch (IOException e) {
+                    log.error("关闭BufferedOutputStream异常", e);
+                }
+            }
         }
-        log.info("任务结束:" + title);
+
+        log.info("任务结束: {}", title);
         callbackMap.put("endTime", System.currentTimeMillis());
         if (this.callbackFunc != null) {
             try {
@@ -324,21 +309,83 @@ public class TaskCenterService implements ITaskCenterService {
     }
 
     /**
-     * 将大 List 拆分成小 List，每个小 List 包含指定数量的元素
-     *
-     * @param sourceList 源大 List
-     * @param chunkSize  每个小 List 的大小
-     * @return 拆分后的 List 的 List
+     * 通用的线程池创建方法
      */
-    private List<List<Object>> splitList(List<Object> sourceList, int chunkSize) {
-        List<List<Object>> result = new ArrayList<>();
+    private ExecutorService createExecutorService(int corePoolSize, int maxPoolSize, int queueCapacity, String threadNamePrefix) {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(corePoolSize);
+        executor.setMaxPoolSize(maxPoolSize);
+        executor.setQueueCapacity(queueCapacity);
+        executor.setThreadNamePrefix(threadNamePrefix);
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.initialize();
+        return TtlExecutors.getTtlExecutorService(executor.getThreadPoolExecutor());
+    }
 
-        for (int i = 0; i < sourceList.size(); i += chunkSize) {
-            int end = Math.min(i + chunkSize, sourceList.size());
-            result.add(new ArrayList<>(sourceList.subList(i, end)));
+    /** 更新任务进度（只有当当前进度低于新进度时才更新） */
+    private void updateTaskProgress(Integer taskId, int progress) {
+        Taskcenter task = taskCenterManager.getTask(taskId);
+        if (task.getProgress() < progress) {
+            TaskCenterUpdateDto updateDto = new TaskCenterUpdateDto();
+            updateDto.setId(taskId);
+            updateDto.setStatus(1);
+            updateDto.setProgress(progress);
+            taskCenterManager.updateTask(updateDto);
         }
+    }
 
-        return result;
+    /** 更新任务完成状态 */
+    private void updateTaskCompletion(Integer taskId, String url) {
+        TaskCenterUpdateDto updateDto = new TaskCenterUpdateDto();
+        updateDto.setId(taskId);
+        updateDto.setStatus(4);
+        updateDto.setProgress(100);
+        updateDto.setUrl(url);
+        updateDto.setErrorMsg("");
+        taskCenterManager.updateTask(updateDto);
+    }
+
+    /** 更新任务失败状态 */
+    private void updateTaskFailure(Integer taskId, String errorMsg) {
+        TaskCenterUpdateDto updateDto = new TaskCenterUpdateDto();
+        updateDto.setId(taskId);
+        updateDto.setStatus(3);
+        updateDto.setErrorMsg(errorMsg);
+        taskCenterManager.updateTask(updateDto);
+    }
+
+    /** 创建临时 Excel 文件 */
+    private File createExcelFile() throws IOException {
+        String dirPath = System.getProperty("user.dir") + "/excel";
+        File dir = new File(dirPath);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        String filePath = dirPath + "/" + UUID.randomUUID() + ExcelTypeEnum.XLSX.getValue();
+        return new File(filePath);
+    }
+
+    /** 上传 Excel 文件并返回下载 URL */
+    private String uploadExcelFile(File file, String title) throws IOException {
+        String fileName = "excel/" + UUID.randomUUID().toString().replace("-", "") + "---" + title + ExcelTypeEnum.XLSX.getValue();
+        IFileService fileService = SpringContextUtil.getBean(IFileService.class);
+        try (InputStream is = Files.newInputStream(file.toPath())) {
+            fileService.uploadCache(is, fileName);
+        }
+        fileService.submit(fileName);
+        String url = fileService.getDownloadUrl(fileName);
+        Files.deleteIfExists(file.toPath());
+        return url;
+    }
+
+    /** 按指定大小分割列表 */
+    private <T> List<List<T>> splitList(List<T> list, int batchSize) {
+        List<List<T>> batches = new ArrayList<>();
+        int total = list.size();
+        for (int i = 0; i < total; i += batchSize) {
+            batches.add(list.subList(i, Math.min(total, i + batchSize)));
+        }
+        return batches;
     }
 
 }

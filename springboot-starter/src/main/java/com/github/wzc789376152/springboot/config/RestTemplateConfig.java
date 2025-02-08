@@ -4,12 +4,10 @@ import cn.hutool.core.net.URLEncoder;
 import com.github.wzc789376152.springboot.utils.MDCUtils;
 import com.github.wzc789376152.utils.TokenUtils;
 import com.github.wzc789376152.vo.UserInfo;
-import org.slf4j.MDC;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
@@ -19,9 +17,7 @@ import org.springframework.web.client.RestTemplate;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.List;
-import java.util.Map;
 
 @Configuration
 @EnableDiscoveryClient
