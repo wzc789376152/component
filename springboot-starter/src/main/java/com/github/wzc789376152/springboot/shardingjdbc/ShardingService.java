@@ -139,9 +139,9 @@ public class ShardingService<T> implements IShardingService<T> {
                 // 确定当前分片查询的数量：
                 // 若查询所有数据，则查询当前分片全部数据；
                 // 否则，查询 min(剩余记录数, 本分片满足条件的记录数减去 offset)
-                int limit = isQueryAll ? partitionCount : Math.min(remaining, partitionCount - offset);
+                Integer limit = isQueryAll ? partitionCount : Math.min(remaining, partitionCount - offset);
                 // 当前分片的查询偏移量
-                final int currentOffset = offset;
+                final Integer currentOffset = offset;
                 // 提交当前分片的查询任务（新克隆一份 QueryWrapper 以避免条件干扰）
                 QueryWrapper<?> listQw = prepareQueryWrapper(baseWrapper, between);
                 futureList.add(CompletableFuture.supplyAsync(
