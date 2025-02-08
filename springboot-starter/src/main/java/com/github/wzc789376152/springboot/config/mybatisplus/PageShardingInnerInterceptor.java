@@ -30,57 +30,79 @@ public class PageShardingInnerInterceptor implements InnerInterceptor {
 
     public void beforePrepare(StatementHandler sh, Connection connection, Integer transactionTimeout) {
         StatementHandler delegate = (StatementHandler) ReflectUtil.getFieldValue(sh, "delegate");
-        // 获取mapper的Statement对象,它描述的是mapper对象的配置
+
+        // 获取 MappedStatement（MyBatis 映射 SQL 配置）
         MappedStatement mappedStatement = (MappedStatement) ReflectUtil.getFieldValue(delegate, "mappedStatement");
-        if (SqlCommandType.UPDATE != mappedStatement.getSqlCommandType()) {
+        if (mappedStatement == null || SqlCommandType.UPDATE != mappedStatement.getSqlCommandType()) {
             return;
         }
-        // 获取数据库对象,此处需要@TableName注解获取表名并进行分表表名匹配
+
+        // 获取数据库实体类（需要 @TableName 注解）
         Class<?> pojoClazz = mappedStatement.getParameterMap().getType();
         if (pojoClazz == null || !pojoClazz.isAnnotationPresent(TableName.class)) {
             return;
         }
-        TableName annotation = pojoClazz.getAnnotation(TableName.class);
+
+        // 获取表名
+        TableName tableNameAnnotation = pojoClazz.getAnnotation(TableName.class);
+        String tableName = tableNameAnnotation.value();
+
         BoundSql boundSql = delegate.getBoundSql();
-        StringBuilder sql = new StringBuilder(boundSql.getSql());
-        if (shardTableMap.containsKey(annotation.value())) {
-            // 在sql尾部拼接分表所属属性
-            YamlTableRuleConfiguration shardConfig = shardTableMap.get(annotation.value());
+        String originalSql = boundSql.getSql();
+        StringBuilder sql = new StringBuilder(originalSql);
+
+        // **处理分表逻辑**
+        if (shardTableMap.containsKey(tableName)) {
+            YamlTableRuleConfiguration shardConfig = shardTableMap.get(tableName);
             List<String> shardingColumns = new ArrayList<>();
-            if (shardConfig.getTableStrategy().getStandard() != null) {
-                shardingColumns.add(shardConfig.getTableStrategy().getStandard().getShardingColumn());
+
+            // **安全地获取分片字段**
+            if (shardConfig.getTableStrategy() != null) {
+                if (shardConfig.getTableStrategy().getStandard() != null) {
+                    shardingColumns.add(shardConfig.getTableStrategy().getStandard().getShardingColumn());
+                }
+                if (shardConfig.getTableStrategy().getComplex() != null) {
+                    shardingColumns.addAll(Arrays.asList(shardConfig.getTableStrategy().getComplex().getShardingColumns().split(",")));
+                }
             }
-            if (shardConfig.getTableStrategy().getComplex() != null) {
-                shardingColumns.addAll(Arrays.asList(shardConfig.getTableStrategy().getComplex().getShardingColumns().split(",")));
-            }
-            for(String shardingColumn:shardingColumns) {
-                if (shardingColumn != null) {
-                    sql.append(" and ").append(shardingColumn).append(" = ?");
+
+            for (String shardingColumn : shardingColumns) {
+                if (StringUtils.isNotBlank(shardingColumn)) {
+                    sql.append(" AND ").append(shardingColumn).append(" = ?");
                 }
             }
         }
+
+        // **处理 @TableFieldType.AutoNumber 逻辑**
         for (Field field : pojoClazz.getDeclaredFields()) {
-            TableFieldType annotation1 = field.getAnnotation(TableFieldType.class);
-            TableField tableField = field.getAnnotation(TableField.class);
-            if (annotation1 == null) {
-                continue;
-            }
-            if (annotation1.value().equals(FileType.AutoNumber)) {
-                String[] sqlArray = null;
-                if (sql.toString().contains("SET")) {
-                    sqlArray = sql.toString().split("SET");
-                } else {
-                    sqlArray = sql.toString().split("set");
+            TableFieldType fieldTypeAnnotation = field.getAnnotation(TableFieldType.class);
+            TableField tableFieldAnnotation = field.getAnnotation(TableField.class);
+
+            if (fieldTypeAnnotation != null && fieldTypeAnnotation.value().equals(FileType.AutoNumber)) {
+                // 获取 SQL 结构（确保包含 SET 关键字）
+                String[] sqlParts = sql.toString().split("(?i)\\bSET\\b", 2);
+                if (sqlParts.length < 2) {
+                    continue;
                 }
-                String fileName = StrUtil.toUnderlineCase(field.getName());
-                if (tableField != null && StringUtils.isNotEmpty(tableField.value())) {
-                    fileName = tableField.value();
+
+                // **字段名转换**（驼峰转下划线）
+                String columnName = StrUtil.toUnderlineCase(field.getName());
+                if (tableFieldAnnotation != null && StringUtils.isNotBlank(tableFieldAnnotation.value())) {
+                    columnName = tableFieldAnnotation.value();
                 }
-                sql = new StringBuilder(sqlArray[0] + " SET " + fileName + "=" + fileName + "+1," + sqlArray[1]);
+
+                // **拼接自增字段 SQL**
+                sql = new StringBuilder(sqlParts[0])
+                        .append(" SET ")
+                        .append(columnName).append(" = ").append(columnName).append(" + 1, ")
+                        .append(sqlParts[1]);
             }
         }
+
+        // **设置修改后的 SQL**
         ReflectUtil.setFieldValue(boundSql, "sql", sql.toString());
     }
+
 
     private void getShardingTables() {
         if (null != shardTableMap) {

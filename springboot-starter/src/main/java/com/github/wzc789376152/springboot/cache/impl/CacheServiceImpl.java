@@ -30,7 +30,7 @@ public abstract class CacheServiceImpl implements ICacheService {
     }
 
     protected <R, T> void putRedis(CacheEnumInterface cacheEnum, SFunction<R, ?> sFunction, List<T> dataList, Class<T> tClass) {
-        if (dataList == null || dataList.size() == 0) {
+        if (dataList == null || dataList.isEmpty()) {
             return;
         }
         try {
@@ -65,10 +65,6 @@ public abstract class CacheServiceImpl implements ICacheService {
 
     @Override
     public <T> Map<String, T> getCacheMap(CacheEnumInterface cacheEnum, Class<T> tClass) {
-        Map<String, T> map = getRedisService().getCacheMap(getRedisKey() + cacheEnum.getKey(), tClass);
-        if (map != null) {
-            return map;
-        }
-        return null;
+        return getRedisService().getCacheMap(getRedisKey() + cacheEnum.getKey(), tClass);
     }
 }

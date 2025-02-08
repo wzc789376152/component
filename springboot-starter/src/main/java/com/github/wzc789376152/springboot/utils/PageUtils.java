@@ -6,6 +6,7 @@ import com.alibaba.ttl.threadpool.TtlExecutors;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.ArrayList;
@@ -83,13 +84,19 @@ public class PageUtils {
         Page<T> toPage = new Page<>(page.getPageNum(), page.getPageSize());
         toPage.setPages(page.getPages());
         toPage.setTotal(page.getTotal());
-        for (Object from : page.getResult()) {
-            if (from.getClass().getName().equals(tClass.getName())) {
-                toPage.add((T) from);
+
+        List<?> resultList = page.getResult();
+        if (resultList == null || resultList.isEmpty()) {
+            return toPage;
+        }
+
+        for (Object from : resultList) {
+            if (tClass.isInstance(from)) {
+                toPage.add(tClass.cast(from));
             } else {
                 T toObj = ReflectUtil.newInstance(tClass);
                 Map<String, Object> stringBeanMap = BeanUtil.beanToMap(from);
-                if (stringBeanMap != null) {
+                if (stringBeanMap != null && !stringBeanMap.isEmpty()) {
                     T toInstance = BeanUtil.fillBeanWithMapIgnoreCase(stringBeanMap, toObj, true);
                     if (toInstance != null) {
                         toPage.add(toInstance);
@@ -99,6 +106,7 @@ public class PageUtils {
         }
         return toPage;
     }
+
 
     public <T> PageUtils resultThen(Class<T> tClass) {
         page = page(tClass);

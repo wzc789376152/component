@@ -12,10 +12,12 @@ import com.github.wzc789376152.utils.DateUtils;
 import lombok.Data;
 import org.springframework.scheduling.annotation.AsyncResult;
 
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -52,8 +54,134 @@ public class ShardingService<T> implements IShardingService<T> {
     }
 
     @Override
+    public List<T> queryList(QueryWrapper<?> wrapper, Integer pageNum, Integer pageSize) throws ExecutionException, InterruptedException {
+        return queryListAsync(wrapper, pageNum, pageSize).get();
+    }
+
+    @Override
     public Future<Integer> queryCountAsync(QueryWrapper<?> wrapper) {
+        // 克隆并调整时间边界（同时更新全局 startTime、endTime）
         QueryWrapper<?> queryWrapper = wrapper.clone();
+        adjustTimeBoundary(queryWrapper);
+
+        return executor.submit(() -> {
+            List<DateBetween> betweenList = getBetweenList(startTime, endTime);
+            int totalCount = 0;
+            List<Future<Integer>> futureList = new ArrayList<>();
+
+            // 针对每个时间分片异步统计
+            for (DateBetween between : betweenList) {
+                QueryWrapper<?> qw = cloneAndClearGroupBy(queryWrapper);
+                applyDateBetweenCondition(qw, between);
+                setBetweenParameters(qw, between);
+
+                futureList.add(countExecutor.submit(() -> {
+                    Integer cnt = countMethod.apply(qw);
+                    return cnt == null ? 0 : cnt;
+                }));
+            }
+
+            // 汇总各分片的计数
+            for (Future<Integer> future : futureList) {
+                try {
+                    totalCount += future.get();
+                } catch (InterruptedException | ExecutionException e) {
+                    throw new SQLException(e.getCause());
+                }
+            }
+            return totalCount;
+        });
+    }
+
+    @Override
+    public Future<List<T>> queryListAsync(QueryWrapper<?> wrapper, Integer pageNum, Integer pageSize) {
+        if (listMethod == null || countMethod == null) {
+            return AsyncResult.forValue(new ArrayList<>());
+        }
+        boolean isAll = (pageSize == 0);
+        // 使用 AtomicInteger 表示剩余需查询条数（便于在多分片间累减）
+        AtomicInteger remainingSize = new AtomicInteger(pageSize);
+        QueryWrapper<?> queryWrapper = wrapper.clone();
+        adjustTimeBoundary(queryWrapper);
+
+        return executor.submit(() -> {
+            List<DateBetween> betweenList = getBetweenList(startTime, endTime);
+            // 计算跨分片的起始偏移量（例如第 pageNum 页前的数据要跳过）
+            int beginSize = (pageNum - 1) * remainingSize.get();
+            List<Future<List<T>>> futureList = new ArrayList<>();
+            boolean isEnd = false;
+
+            for (DateBetween between : betweenList) {
+                QueryWrapper<?> qw = cloneAndClearGroupBy(queryWrapper);
+                applyDateBetweenCondition(qw, between);
+                setBetweenParameters(qw, between);
+
+                Integer countObj = countMethod.apply(qw);
+                int count = (countObj == null ? 0 : countObj);
+                if (count == 0) {
+                    continue;
+                }
+                // 如果本分片的数据全部在分页起点之前，则跳过，并减少偏移量
+                if (beginSize >= count) {
+                    beginSize -= count;
+                    continue;
+                }
+                if (isEnd) {
+                    break;
+                }
+
+                // 当前分片需要查询的条数
+                int limit = remainingSize.get();
+                if (limit == 0) {
+                    limit = count;
+                }
+                if (count - beginSize < remainingSize.get()) {
+                    limit = count - beginSize;
+                }
+                final int finalBeginSize = beginSize;
+                final int finalLimit = limit;
+
+                QueryWrapper<?> listQw = cloneAndClearGroupBy(queryWrapper);
+                applyDateBetweenCondition(listQw, between);
+                setBetweenParameters(listQw, between);
+
+                futureList.add(searchExecutor.submit(() ->
+                        listMethod.apply(listQw, finalLimit, finalBeginSize)));
+
+                // 后续分片查询从头开始（起始偏移归零）
+                beginSize = 0;
+                if (!isAll) {
+                    // 若当前分片查询数小于 pageSize，则剩余数减去已查询的记录，否则结束查询
+                    if (remainingSize.get() == 0 || finalLimit == remainingSize.get()) {
+                        isEnd = true;
+                    } else {
+                        remainingSize.addAndGet(-finalLimit);
+                    }
+                }
+            }
+
+            // 汇总所有分片返回的数据
+            List<T> result = new ArrayList<>();
+            for (Future<List<T>> future : futureList) {
+                try {
+                    List<T> list = future.get();
+                    if (list != null) {
+                        result.addAll(list);
+                    }
+                } catch (InterruptedException | ExecutionException e) {
+                    throw new SQLException(e.getCause());
+                }
+            }
+            return result;
+        });
+    }
+
+    /* ================= 辅助方法 ================= */
+
+    /**
+     * 根据传入的 QueryWrapper 调整全局的起止时间
+     */
+    private void adjustTimeBoundary(QueryWrapper<?> queryWrapper) {
         String expressBaseStr = queryWrapper.getCustomSqlSegment();
         String geBaseKey = geKey(expressBaseStr, field);
         String leBaseKey = leKey(expressBaseStr, field);
@@ -69,194 +197,61 @@ public class ShardingService<T> implements IShardingService<T> {
                 endTime = finalTime;
             }
         }
-        return executor.submit(() -> {
-            List<DateBetween> betweenList = null;
-            switch (shardingType) {
-                case Year:
-                    betweenList = betweenDateByYears(startTime, endTime);
-                    break;
-                case Month:
-                    betweenList = betweenDateByMonths(startTime, endTime);
-            }
-            int result = 0;
-            List<Future<Integer>> futureList = new ArrayList<>();
-            for (DateBetween between : betweenList) {
-                QueryWrapper<?> queryWrapper1 = queryWrapper.clone();
-                if (queryWrapper1.getExpression().getGroupBy() != null && queryWrapper1.getExpression().getGroupBy().size() > 0) {
-                    for (int j = 0; j < queryWrapper1.getExpression().getGroupBy().size(); j++) {
-                        queryWrapper1.getExpression().getGroupBy().remove(j);
-                    }
-                }
-                String expressStr = queryWrapper1.getCustomSqlSegment();
-                String geKey = geKey(expressStr, field);
-                String leKey = leKey(expressStr, field);
-                if (between.getStartDate().getTime() == between.getEndDate().getTime()) {
-                    queryWrapper1.eq(geKey == null && leKey == null, field, between.getStartDate());
-                } else {
-                    queryWrapper1.le(leKey == null, field, between.getEndDate());
-                    queryWrapper1.ge(geKey == null, field, between.getStartDate());
-                }
-                expressStr = queryWrapper1.getCustomSqlSegment();
-                geKey = geKey(expressStr, field);
-                leKey = leKey(expressStr, field);
-                queryWrapper1.getParamNameValuePairs().put(geKey, between.getStartDate());
-                queryWrapper1.getParamNameValuePairs().put(leKey, between.getEndDate());
-                futureList.add(countExecutor.submit(() -> countMethod.apply(queryWrapper1)));
-            }
-            for (Future<Integer> future1 : futureList) {
-                try {
-                    Integer obj = future1.get();
-                    if (obj == null) {
-                        obj = 0;
-                    }
-                    result += obj;
-                } catch (InterruptedException | ExecutionException e) {
-                    e.printStackTrace();
-                }
-            }
-            return result;
-        });
     }
 
-    @Override
-    public List<T> queryList(QueryWrapper<?> wrapper, Integer pageNum, Integer pageSize) throws ExecutionException, InterruptedException {
-        return queryListAsync(wrapper, pageNum, pageSize).get();
+    /**
+     * 克隆 QueryWrapper 并清空其中的 groupBy 条件
+     */
+    private QueryWrapper<?> cloneAndClearGroupBy(QueryWrapper<?> queryWrapper) {
+        QueryWrapper<?> clone = queryWrapper.clone();
+        if (clone.getExpression() != null && clone.getExpression().getGroupBy() != null) {
+            clone.getExpression().getGroupBy().clear();
+        }
+        return clone;
     }
 
-    @Override
-    public Future<List<T>> queryListAsync(QueryWrapper<?> wrapper, Integer pageNum, Integer pageSize) {
-        if (listMethod == null || countMethod == null) {
-            return AsyncResult.forValue(new ArrayList<>());
+    /**
+     * 根据分片条件对 QueryWrapper 应用时间条件（当开始时间与结束时间相等时采用 eq，否则用 ge 与 le）
+     */
+    private void applyDateBetweenCondition(QueryWrapper<?> queryWrapper, DateBetween between) {
+        String expressStr = queryWrapper.getCustomSqlSegment();
+        String geKey = geKey(expressStr, field);
+        String leKey = leKey(expressStr, field);
+        if (between.getStartDate().getTime() == between.getEndDate().getTime()) {
+            queryWrapper.eq(geKey == null && leKey == null, field, between.getStartDate());
+        } else {
+            queryWrapper.ge(geKey == null, field, between.getStartDate());
+            queryWrapper.le(leKey == null, field, between.getEndDate());
         }
-        Boolean isAll = false;
-        if (pageSize == 0) {
-            isAll = true;
+    }
+
+    /**
+     * 将分片的起止时间放入 QueryWrapper 的参数映射中
+     */
+    private void setBetweenParameters(QueryWrapper<?> queryWrapper, DateBetween between) {
+        String expressStr = queryWrapper.getCustomSqlSegment();
+        String geKey = geKey(expressStr, field);
+        String leKey = leKey(expressStr, field);
+        queryWrapper.getParamNameValuePairs().put(geKey, between.getStartDate());
+        queryWrapper.getParamNameValuePairs().put(leKey, between.getEndDate());
+    }
+
+    /**
+     * 根据全局 startTime 和 endTime 以及分片类型生成分片列表
+     */
+    private List<DateBetween> getBetweenList(Date start, Date end) {
+        List<DateBetween> betweenList;
+        switch (shardingType) {
+            case Year:
+                betweenList = betweenDateByYears(start, end);
+                break;
+            case Month:
+                betweenList = betweenDateByMonths(start, end);
+                break;
+            default:
+                betweenList = Collections.emptyList();
         }
-        final Integer[] size = {pageSize};
-        QueryWrapper<?> queryWrapper = wrapper.clone();
-        String expressBaseStr = queryWrapper.getCustomSqlSegment();
-        String geBaseKey = geKey(expressBaseStr, field);
-        String leBaseKey = leKey(expressBaseStr, field);
-        if (geBaseKey != null) {
-            Date beginTime = (Date) queryWrapper.getParamNameValuePairs().get(geBaseKey);
-            if (beginTime.getTime() > startTime.getTime()) {
-                startTime = beginTime;
-            }
-        }
-        if (leBaseKey != null) {
-            Date finalTime = (Date) queryWrapper.getParamNameValuePairs().get(leBaseKey);
-            if (finalTime.getTime() < endTime.getTime()) {
-                endTime = finalTime;
-            }
-        }
-        Boolean finalIsAll = isAll;
-        return executor.submit(() -> {
-            //按照时间分片
-            List<DateBetween> betweenList = null;
-            switch (shardingType) {
-                case Year:
-                    betweenList = betweenDateByYears(startTime, endTime);
-                    break;
-                case Month:
-                    betweenList = betweenDateByMonths(startTime, endTime);
-            }
-            //查询起点
-            int beginSize = (pageNum - 1) * size[0];
-            int i = 0;
-            Map<Integer, Future<List<T>>> resultMap = new HashMap<>();
-            boolean isEnd = false;
-            //查询每个分片实际数据，多线程
-            for (DateBetween between : betweenList) {
-                QueryWrapper<?> queryWrapper2 = queryWrapper.clone();
-                if (queryWrapper2.getExpression().getGroupBy() != null && queryWrapper2.getExpression().getGroupBy().size() > 0) {
-                    for (int j = 0; j < queryWrapper2.getExpression().getGroupBy().size(); j++) {
-                        queryWrapper2.getExpression().getGroupBy().remove(j);
-                    }
-                }
-                String expressStr = queryWrapper2.getCustomSqlSegment();
-                String geKey = geKey(expressStr, field);
-                String leKey = leKey(expressStr, field);
-                if (between.getStartDate().getTime() == between.getEndDate().getTime()) {
-                    queryWrapper2.eq(geKey == null && leKey == null, field, between.getStartDate());
-                } else {
-                    queryWrapper2.le(leKey == null, field, between.getEndDate());
-                    queryWrapper2.ge(geKey == null, field, between.getStartDate());
-                }
-                expressStr = queryWrapper2.getCustomSqlSegment();
-                geKey = geKey(expressStr, field);
-                leKey = leKey(expressStr, field);
-                queryWrapper2.getParamNameValuePairs().put(geKey, between.getStartDate());
-                queryWrapper2.getParamNameValuePairs().put(leKey, between.getEndDate());
-                Integer object = countMethod.apply(queryWrapper2);
-                int count = Integer.parseInt(object == null ? "0" : object.toString());
-                if (count == 0L) {
-                    i++;
-                    continue;
-                }
-                if (beginSize >= count) {
-                    //如果查询的起点是比这张表的数据大的，就忽略这张表，查询下一张表，并把起点位置去掉该表的总数
-                    beginSize -= count;
-                } else {
-                    if (isEnd) {
-                        break;
-                    }
-                    Integer limit = size[0];
-                    if (limit == 0) {
-                        limit = count;
-                    }
-                    //判断查询的条数是否足够，如果不足够，则查询该表实际数值。如需查询20条，但是该表只有15条
-                    if (count - beginSize < size[0]) {
-                        limit = count - beginSize;
-                    }
-                    Integer finalBeginSize = beginSize;
-                    Integer finalLimit = limit;
-                    QueryWrapper<?> queryWrapper1 = queryWrapper.clone();
-                    expressStr = queryWrapper1.getCustomSqlSegment();
-                    geKey = geKey(expressStr, field);
-                    leKey = leKey(expressStr, field);
-                    if (between.getStartDate().getTime() == between.getEndDate().getTime()) {
-                        queryWrapper1.eq(geKey == null && leKey == null, field, between.getStartDate());
-                    } else {
-                        queryWrapper1.le(leKey == null, field, between.getEndDate());
-                        queryWrapper1.ge(geKey == null, field, between.getStartDate());
-                    }
-                    expressStr = queryWrapper1.getCustomSqlSegment();
-                    geKey = geKey(expressStr, field);
-                    leKey = leKey(expressStr, field);
-                    queryWrapper1.getParamNameValuePairs().put(geKey, between.getStartDate());
-                    queryWrapper1.getParamNameValuePairs().put(leKey, between.getEndDate());
-                    Future<List<T>> future = searchExecutor.submit(() -> listMethod.apply(queryWrapper1, finalLimit, finalBeginSize));
-                    resultMap.put(i, future);
-                    beginSize = 0;
-                    if (!finalIsAll) {
-                        if (size[0] == 0 || limit.equals(size[0])) {
-                            isEnd = true;
-                        } else {
-                            //查询完成将查询的条目减掉，如需查询20条，该表只查了15条，下次查询则只需查询5条
-                            size[0] = size[0] - limit;
-                        }
-                    }
-                }
-                i++;
-            }
-            //将查询数据汇总
-            List<T> result = new ArrayList<>();
-            for (int j = 0; j < i; j++) {
-                try {
-                    Future<List<T>> future = resultMap.get(j);
-                    if (future == null) {
-                        continue;
-                    }
-                    List<T> o = future.get();
-                    result.addAll(o);
-                } catch (InterruptedException | ExecutionException e) {
-                    e.printStackTrace();
-                }
-            }
-            Date endDate = new Date();
-//            System.out.println("查询耗时：" + (endDate.getTime() - beginDate.getTime()) / 1000 + "s");
-            return result;
-        });
+        return betweenList;
     }
 
     @Override
@@ -295,126 +290,104 @@ public class ShardingService<T> implements IShardingService<T> {
     private static class DateBetween {
         private Date startDate;
         private Date endDate;
+
+        public DateBetween() {
+        }
+
+        public DateBetween(Date startDate, Date endDate) {
+            this.startDate = startDate;
+            this.endDate = endDate;
+        }
     }
 
     private static List<DateBetween> betweenDateByYears(Date startTime, Date endTime) {
         if (startTime == null) {
             ShardingPropertics shardingPropertics = SpringContextUtil.getBean(ShardingPropertics.class);
-            if (shardingPropertics.getMinDate() != null) {
-                startTime = shardingPropertics.getMinDate();
-            } else {
-                startTime = DateUtils.parse("2000-01-01 00:00:00");
-            }
+            startTime = shardingPropertics.getMinDate() != null ? shardingPropertics.getMinDate() : DateUtils.parse("2000-01-01 00:00:00");
         }
         if (endTime == null) {
             endTime = new Date();
         }
-        List<DateBetween> list = new LinkedList<>();
-        int startYear = Integer.parseInt(DateUtils.format(startTime, "yyyy"));
-        int endYear = Integer.parseInt(DateUtils.format(endTime, "yyyy"));
-        for (int i = endYear; i >= startYear; i--) {
-            if (i == endYear) {
-                DateBetween between = new DateBetween();
-                if (i == startYear) {
-                    between.setStartDate(startTime);
-                } else {
-                    between.setStartDate(DateUtils.parse(i + "-01-01 00:00:00", "yyyy-MM-dd HH:mm:ss"));
-                }
-                between.setEndDate(endTime);
-                list.add(between);
-            } else if (i == startYear) {
-                DateBetween between = new DateBetween();
-                between.setEndDate(DateUtils.parse(i + "-12-31 23:59:59", "yyyy-MM-dd HH:mm:ss"));
+
+        List<DateBetween> dateRanges = new ArrayList<>();
+        Calendar startCal = Calendar.getInstance();
+        startCal.setTime(startTime);
+        int startYear = startCal.get(Calendar.YEAR);
+
+        Calendar endCal = Calendar.getInstance();
+        endCal.setTime(endTime);
+        int endYear = endCal.get(Calendar.YEAR);
+
+        for (int year = endYear; year >= startYear; year--) {
+            DateBetween between = new DateBetween();
+            Calendar cal = Calendar.getInstance();
+
+            if (year == startYear) {
                 between.setStartDate(startTime);
-                list.add(between);
             } else {
-                DateBetween between = new DateBetween();
-                between.setEndDate(DateUtils.parse(i + "-12-31 23:59:59", "yyyy-MM-dd HH:mm:ss"));
-                between.setStartDate(DateUtils.parse(i + "-01-01 00:00:00", "yyyy-MM-dd HH:mm:ss"));
-                list.add(between);
+                cal.set(year, Calendar.JANUARY, 1, 0, 0, 0);
+                between.setStartDate(cal.getTime());
             }
+
+            if (year == endYear) {
+                between.setEndDate(endTime);
+            } else {
+                cal.set(year, Calendar.DECEMBER, 31, 23, 59, 59);
+                between.setEndDate(cal.getTime());
+            }
+
+            dateRanges.add(between);
         }
-        return list;
+
+        return dateRanges;
     }
 
     private static List<DateBetween> betweenDateByMonths(Date startTime, Date endTime) {
         if (startTime == null) {
             ShardingPropertics shardingPropertics = SpringContextUtil.getBean(ShardingPropertics.class);
-            if (shardingPropertics.getMinDate() != null) {
-                startTime = shardingPropertics.getMinDate();
-            } else {
-                startTime = DateUtils.parse("2000-01-01 00:00:00");
-            }
+            startTime = shardingPropertics.getMinDate() != null ? shardingPropertics.getMinDate() : DateUtils.parse("2000-01-01 00:00:00");
         }
         if (endTime == null) {
             endTime = new Date();
         }
-        if (startTime.getTime() == endTime.getTime()) {
-            List<DateBetween> betweenList = new ArrayList<>();
+
+        if (startTime.equals(endTime)) {
+            return Collections.singletonList(new DateBetween(startTime, endTime));
+        }
+
+        List<DateBetween> dateRanges = new ArrayList<>();
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(startTime);
+
+        Calendar endCal = Calendar.getInstance();
+        endCal.setTime(endTime);
+
+        while (cal.before(endCal)) {
             DateBetween between = new DateBetween();
-            between.setStartDate(startTime);
-            between.setEndDate(endTime);
-            betweenList.add(between);
-            return betweenList;
-        }
-        List<DateBetween> list = new LinkedList<>();
-        Date d1 = startTime;// 定义起始日期
-        Date d2 = endTime;// 定义结束日期
-        Calendar dd = Calendar.getInstance();// 定义日期实例
-        dd.setTime(d1);// 设置日期起始时间
-        Calendar cale = Calendar.getInstance();
-        Calendar c = Calendar.getInstance();
-        c.setTime(d2);
-        int startDay = dd.get(Calendar.DAY_OF_MONTH);
-        int endDay = c.get(Calendar.DAY_OF_MONTH);
-        DateBetween keyValueForDate = null;
-        while (dd.getTime().before(d2)) {// 判断是否到结束日期
-            keyValueForDate = new DateBetween();
-            cale.setTime(dd.getTime());
-            if (dd.getTime().equals(d1)) {
-                cale.set(Calendar.DAY_OF_MONTH, dd.getActualMaximum(Calendar.DAY_OF_MONTH));
-                keyValueForDate.setStartDate(d1);
-                Date finishDate = cale.getTime();
-                if (finishDate.before(d2)) {
-                    cale.set(Calendar.HOUR_OF_DAY, 23);
-                    cale.set(Calendar.MINUTE, 59);
-                    cale.set(Calendar.SECOND, 59);
-                    keyValueForDate.setEndDate(cale.getTime());
-                } else {
-                    keyValueForDate.setEndDate(d2);
-                }
+            between.setStartDate(cal.getTime());
 
-            } else if (dd.get(Calendar.MONTH) == c.get(Calendar.MONTH) && dd.get(Calendar.YEAR) == c.get(Calendar.YEAR)) {
-                cale.set(Calendar.DAY_OF_MONTH, 1);//取第一天
-                keyValueForDate.setStartDate(cale.getTime());
-                keyValueForDate.setEndDate(d2);
+            // 设置当前月份的最后一天 23:59:59
+            cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH));
+            cal.set(Calendar.HOUR_OF_DAY, 23);
+            cal.set(Calendar.MINUTE, 59);
+            cal.set(Calendar.SECOND, 59);
+
+            if (cal.getTime().after(endTime)) {
+                between.setEndDate(endTime);
             } else {
-                cale.set(Calendar.DAY_OF_MONTH, 1);//取第一天
-                keyValueForDate.setStartDate(cale.getTime());
-                cale.set(Calendar.DAY_OF_MONTH, dd
-                        .getActualMaximum(Calendar.DAY_OF_MONTH));
-                cale.set(Calendar.HOUR_OF_DAY, 23);
-                cale.set(Calendar.MINUTE, 59);
-                cale.set(Calendar.SECOND, 59);
-                keyValueForDate.setEndDate(cale.getTime());
-
+                between.setEndDate(cal.getTime());
             }
-            list.add(keyValueForDate);
-            dd.add(Calendar.MONTH, 1);// 进行当前日期月份加1
 
-        }
-        if (endDay < startDay) {
-            keyValueForDate = new DateBetween();
+            dateRanges.add(between);
 
-            cale.setTime(d2);
-            cale.set(Calendar.DAY_OF_MONTH, 1);//取第一天
-            cale.set(Calendar.HOUR_OF_DAY, 0);
-            cale.set(Calendar.MINUTE, 0);
-            cale.set(Calendar.SECOND, 0);
-            keyValueForDate.setStartDate(cale.getTime());
-            keyValueForDate.setEndDate(d2);
-            list.add(keyValueForDate);
+            // 移动到下个月
+            cal.add(Calendar.MONTH, 1);
+            cal.set(Calendar.DAY_OF_MONTH, 1);
+            cal.set(Calendar.HOUR_OF_DAY, 0);
+            cal.set(Calendar.MINUTE, 0);
+            cal.set(Calendar.SECOND, 0);
         }
-        return list.stream().sorted(Comparator.comparing(DateBetween::getStartDate).reversed()).collect(Collectors.toList());
+
+        return dateRanges;
     }
 }
