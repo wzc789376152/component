@@ -138,13 +138,13 @@ public class ShardingService<T> implements IShardingService<T> {
                 if (count - beginSize < remainingSize.get()) {
                     limit = count - beginSize;
                 }
-                final int finalBeginSize = beginSize;
-                final int finalLimit = limit;
 
                 QueryWrapper<?> listQw = cloneAndClearGroupBy(queryWrapper);
                 applyDateBetweenCondition(listQw, between);
                 setBetweenParameters(listQw, between);
 
+                final Integer finalLimit = limit;
+                final Integer finalBeginSize = beginSize;
                 futureList.add(searchExecutor.submit(() ->
                         listMethod.apply(listQw, finalLimit, finalBeginSize)));
 
