@@ -10,6 +10,8 @@ import com.github.wzc789376152.springboot.shardingjdbc.function.ShardingListFunc
 import com.github.wzc789376152.utils.DateUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import java.time.YearMonth;
+import java.time.ZoneId;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -18,24 +20,45 @@ import java.util.TreeSet;
 public class ShardingUtils {
 
 
+    /**
+     * 根据下界和上界后缀，生成中间所有的后缀集合（包含边界值）。
+     * 假设后缀格式为 "yyyy_M" 或 "yyyy_MM"，例如 "2022_1" 或 "2022_12"。
+     *
+     * @param lowerSuffix 下界后缀
+     * @param upperSuffix 上界后缀
+     * @return 包含所有后缀的 TreeSet 集合
+     */
     public static TreeSet<String> getSuffixListForRange(String lowerSuffix, String upperSuffix) {
         TreeSet<String> suffixList = new TreeSet<>();
-        if (lowerSuffix.equals(upperSuffix)) { //上下界在同一张表
-            suffixList.add(lowerSuffix);
-        } else {  //上下界不在同一张表  计算间隔的所有表
-            String tempSuffix = lowerSuffix;
-            while (!tempSuffix.equals(upperSuffix)) {
-                suffixList.add(tempSuffix);
-                String[] ym = tempSuffix.split("_");
-                Date tempDate = DateUtils.parse(ym[0] + (ym[1].length() == 1 ? "0" + ym[1] : ym[1]), "yyyyMM");
-                Calendar cal = Calendar.getInstance();
-                cal.setTime(tempDate);
-                cal.add(Calendar.MONTH, 1);
-                tempSuffix = ShardingUtils.getSuffixByYearMonth(cal.getTime());
-            }
-            suffixList.add(tempSuffix);
+
+        // 解析后缀为 YearMonth
+        YearMonth lower = parseSuffix(lowerSuffix);
+        YearMonth upper = parseSuffix(upperSuffix);
+
+        // 遍历从 lower 到 upper 的所有月份
+        for (YearMonth ym = lower; !ym.isAfter(upper); ym = ym.plusMonths(1)) {
+            // 将 YearMonth 转换为 Date（假设需要传给 ShardingUtils.getSuffixByYearMonth）
+            Date date = Date.from(ym.atDay(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
+            String suffix = ShardingUtils.getSuffixByYearMonth(date);
+            suffixList.add(suffix);
         }
         return suffixList;
+    }
+
+    /**
+     * 将形如 "yyyy_M" 或 "yyyy_MM" 的后缀转换为 YearMonth 对象
+     *
+     * @param suffix 后缀字符串
+     * @return 对应的 YearMonth 对象
+     */
+    private static YearMonth parseSuffix(String suffix) {
+        String[] parts = suffix.split("_");
+        if (parts.length != 2) {
+            throw new IllegalArgumentException("后缀格式错误: " + suffix);
+        }
+        int year = Integer.parseInt(parts[0]);
+        int month = Integer.parseInt(parts[1]);
+        return YearMonth.of(year, month);
     }
 
     public static int getSuffixByYear(Date date) {

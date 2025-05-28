@@ -2,6 +2,7 @@ package com.github.wzc789376152.springboot.config;
 
 import cn.hutool.core.net.URLEncoder;
 import com.github.wzc789376152.springboot.utils.MDCUtils;
+import com.github.wzc789376152.utils.IpUtil;
 import com.github.wzc789376152.utils.TokenUtils;
 import com.github.wzc789376152.vo.UserInfo;
 import feign.RequestInterceptor;
@@ -20,6 +21,7 @@ public class FeignConfiguration implements RequestInterceptor {
     public void apply(RequestTemplate requestTemplate) {
         setHeader(requestTemplate, "FeignResultFormat", true);
         setHeader(requestTemplate, "traceId", MDCUtils.get("traceId"));
+        setHeader(requestTemplate, "X-Real-IP", IpUtil.getIpAddr());
         UserInfo userInfo = TokenUtils.getCurrentUser();
         if (userInfo != null) {
             setToken(requestTemplate, userInfo.getToken());
