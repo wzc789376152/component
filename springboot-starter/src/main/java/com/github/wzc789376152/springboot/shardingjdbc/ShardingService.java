@@ -336,7 +336,7 @@ public class ShardingService<T> implements IShardingService<T> {
             }
             dateRanges.add(between);
         }
-        return dateRanges;
+        return dateRanges.stream().sorted(Comparator.comparing(DateBetween::getStartDate).reversed()).collect(Collectors.toList());
     }
 
     /**
@@ -370,7 +370,7 @@ public class ShardingService<T> implements IShardingService<T> {
             cal.set(Calendar.MINUTE, 0);
             cal.set(Calendar.SECOND, 0);
         }
-        return dateRanges;
+        return dateRanges.stream().sorted(Comparator.comparing(DateBetween::getStartDate).reversed()).collect(Collectors.toList());
     }
 
     /**
