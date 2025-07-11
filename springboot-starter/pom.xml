@@ -21,7 +21,8 @@
         </profile>
     </profiles>
     <artifactId>springboot-starter</artifactId>
-    <version>${project.release.version}</version>
+    <name>springboot-starter</name>
+    <version>2.3.8</version>
     <packaging>jar</packaging>
     <description>
         springboot-starter
