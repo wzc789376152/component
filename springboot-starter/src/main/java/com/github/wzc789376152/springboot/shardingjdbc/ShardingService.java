@@ -344,6 +344,13 @@ public class ShardingService<T> implements IShardingService<T> {
      */
     private static List<DateBetween> betweenDateByMonths(Date startTime, Date endTime) {
         List<DateBetween> dateRanges = new ArrayList<>();
+        if (startTime.getTime() == endTime.getTime()) {
+            DateBetween between = new DateBetween();
+            between.setStartDate(startTime);
+            between.setEndDate(endTime);
+            dateRanges.add(between);
+            return dateRanges;
+        }
         Calendar cal = Calendar.getInstance();
         cal.setTime(startTime);
         Calendar endCal = Calendar.getInstance();
@@ -381,7 +388,8 @@ public class ShardingService<T> implements IShardingService<T> {
         private Date startDate;
         private Date endDate;
 
-        public DateBetween() { }
+        public DateBetween() {
+        }
 
         public DateBetween(Date startDate, Date endDate) {
             this.startDate = startDate;
