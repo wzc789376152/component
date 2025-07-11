@@ -385,27 +385,27 @@
     <build>
         <plugins>
             <!--自动发布插件-->
+<!--            <plugin>-->
+<!--                <groupId>org.sonatype.plugins</groupId>-->
+<!--                <artifactId>nexus-staging-maven-plugin</artifactId>-->
+<!--                <version>1.6.8</version>-->
+<!--                <extensions>true</extensions>-->
+<!--                <configuration>-->
+<!--                    <serverId>sonatype-nexus-staging</serverId>-->
+<!--                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>-->
+<!--                    <autoReleaseAfterClose>true</autoReleaseAfterClose>-->
+<!--                </configuration>-->
+<!--            </plugin>-->
             <plugin>
-                <groupId>org.sonatype.plugins</groupId>
-                <artifactId>nexus-staging-maven-plugin</artifactId>
-                <version>1.6.8</version>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.7.0</version>
                 <extensions>true</extensions>
                 <configuration>
-                    <serverId>sonatype-nexus-staging</serverId>
-                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                    <publishingServerId>allbs</publishingServerId>
+                    <autoPublish>true</autoPublish>
                 </configuration>
             </plugin>
-            <!--            <plugin>-->
-            <!--                <groupId>org.sonatype.central</groupId>-->
-            <!--                <artifactId>central-publishing-maven-plugin</artifactId>-->
-            <!--                <version>0.5.0</version>-->
-            <!--                <extensions>true</extensions>-->
-            <!--                <configuration>-->
-            <!--                    <publishingServerId>allbs</publishingServerId>-->
-            <!--                    <autoPublish>true</autoPublish>-->
-            <!--                </configuration>-->
-            <!--            </plugin>-->
         </plugins>
     </build>
 </project>
