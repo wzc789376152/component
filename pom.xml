@@ -367,6 +367,12 @@
                 <artifactId>mysql-connector-java</artifactId>
                 <version>${mysql.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.7.0</version>
+                <scope>provided</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
     <!--    <distributionManagement>-->
@@ -403,7 +409,6 @@
                 <extensions>true</extensions>
                 <configuration>
                     <publishingServerId>allbs</publishingServerId>
-                    <autoPublish>true</autoPublish>
                 </configuration>
             </plugin>
         </plugins>
