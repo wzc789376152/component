@@ -373,9 +373,9 @@ public class TaskCenterService implements ITaskCenterService {
             fileService.uploadCache(is, fileName);
         }
         fileService.submit(fileName);
-        String url = fileService.getDownloadUrl(fileName);
+//        String url = fileService.getDownloadUrl(fileName);
         Files.deleteIfExists(file.toPath());
-        return url;
+        return fileName;
     }
 
     /** 按指定大小分割列表 */
