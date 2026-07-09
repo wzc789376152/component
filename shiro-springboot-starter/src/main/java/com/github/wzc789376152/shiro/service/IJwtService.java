@@ -13,13 +13,11 @@ public interface IJwtService {
      */
     JwtTokenResult createToken(UserInfo userInfo);
 
-    JwtTokenResult createToken(UserInfo userInfo, HttpServletResponse response);
-
     Boolean verify(String token);
 
     JwtTokenResult refresh(String refreshToken);
 
-    JwtTokenResult refresh(String refreshToken, HttpServletResponse response);
+    Boolean removeToken();
 
     UserInfo getUserInfo(String token);
 }

@@ -10,7 +10,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <properties>
-        <project.release.version>2.1.6</project.release.version>
+        <project.release.version>${wzc.shiro.version}</project.release.version>
     </properties>
     <profiles>
         <profile>

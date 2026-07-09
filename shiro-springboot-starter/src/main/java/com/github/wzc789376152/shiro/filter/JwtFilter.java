@@ -96,7 +96,7 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
                 isTimeout = true;
             }
             if (isTimeout) {
-                JwtTokenResult jwtTokenResult = jwtService.refresh(refreshToken, (HttpServletResponse) response);
+                JwtTokenResult jwtTokenResult = jwtService.refresh(refreshToken);
                 token = jwtTokenResult.getToken();
                 JwtToken jwtToken = new JwtToken(token);
                 // 提交给realm进行登入，如果错误他会抛出异常并被捕获

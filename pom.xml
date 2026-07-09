@@ -72,7 +72,7 @@
         <wzc.common.version>2.1.5</wzc.common.version>
         <wzc.springboot.version>2.3.7</wzc.springboot.version>
         <wzc.file.version>2.1.1</wzc.file.version>
-        <wzc.shiro.version>2.1.6</wzc.shiro.version>
+        <wzc.shiro.version>2.1.7</wzc.shiro.version>
     </properties>
     <packaging>pom</packaging>
     <parent>
