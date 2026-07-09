@@ -10,7 +10,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <properties>
-        <project.release.version>${wzc.shiro.version}</project.release.version>
+        <project.release.version>2.1.6</project.release.version>
     </properties>
     <profiles>
         <profile>
@@ -23,6 +23,7 @@
     <artifactId>shiro-springboot-starter</artifactId>
     <version>${project.release.version}</version>
     <packaging>jar</packaging>
+    <name>shiro-springboot-starter</name>
     <description>
         shiro权限控制starter
     </description>
