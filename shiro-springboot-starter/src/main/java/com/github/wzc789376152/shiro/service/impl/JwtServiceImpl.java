@@ -122,12 +122,18 @@ public class JwtServiceImpl implements IJwtService {
             String host = request.getHeader("x-forwarded-host");
             HttpServletResponse response = requestAttributes.getResponse();
             if (response != null) {
+                Cookie tokenCookie = new Cookie("jwt-token", null);
+                tokenCookie.setMaxAge(0);
+                tokenCookie.setPath("/");
                 Cookie refreshCookie = new Cookie("jwt-refreshToken", null);
                 refreshCookie.setMaxAge(0);
                 refreshCookie.setPath("/");
                 if (StringUtils.isNotEmpty(host)) {
-                    refreshCookie.setDomain(getHost(host));
+                    host = getHost(host);
+                    tokenCookie.setDomain(host);
+                    refreshCookie.setDomain(host);
                 }
+                response.addCookie(tokenCookie);
                 response.addCookie(refreshCookie);
             }
         }
