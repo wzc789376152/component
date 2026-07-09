@@ -1,5 +1,6 @@
 package com.github.wzc789376152.shiro.service.impl;
 
+import cn.hutool.core.codec.Base64Encoder;
 import com.alibaba.fastjson.JSONObject;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
@@ -13,6 +14,8 @@ import com.github.wzc789376152.shiro.token.JwtTokenResult;
 import com.github.wzc789376152.utils.JSONUtils;
 import com.github.wzc789376152.vo.UserInfo;
 
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletResponse;
 import java.util.Date;
 
 public class JwtServiceImpl implements IJwtService {
@@ -34,6 +37,21 @@ public class JwtServiceImpl implements IJwtService {
         jwtTokenResult.setToken(token);
         jwtTokenResult.setRefreshToken(refreshToken);
         jwtTokenResult.setExpiresAt(end);
+        return jwtTokenResult;
+    }
+
+    @Override
+    public JwtTokenResult createToken(UserInfo userInfo, HttpServletResponse response) {
+        Date refreshEnd = new Date(System.currentTimeMillis() + shiroJwtProperty.getRefreshTimeout());
+        JwtTokenResult jwtTokenResult = createToken(userInfo);
+        Cookie tokenCookie = new Cookie("jwt-token", jwtTokenResult.getToken());
+        tokenCookie.setMaxAge((int) (jwtTokenResult.getExpiresAt().getTime() - new Date().getTime()) / 1000);
+        tokenCookie.setPath("/");
+        response.addCookie(tokenCookie);
+        Cookie refreshCookie = new Cookie("jwt-refreshToken", jwtTokenResult.getRefreshToken());
+        refreshCookie.setMaxAge((int) (refreshEnd.getTime() - new Date().getTime()) / 1000);
+        refreshCookie.setPath("/");
+        response.addCookie(refreshCookie);
         return jwtTokenResult;
     }
 
@@ -63,10 +81,21 @@ public class JwtServiceImpl implements IJwtService {
             jwtTokenResult.setToken(token);
             jwtTokenResult.setRefreshToken(refreshToken);
             jwtTokenResult.setExpiresAt(end);
+
             return jwtTokenResult;
         } else {
             throw new TokenExpiredException("token已失效");
         }
+    }
+
+    @Override
+    public JwtTokenResult refresh(String refreshToken, HttpServletResponse response) {
+        JwtTokenResult jwtTokenResult = refresh(refreshToken);
+        Cookie tokenCookie = new Cookie("jwt-token", jwtTokenResult.getToken());
+        tokenCookie.setMaxAge((int) (jwtTokenResult.getExpiresAt().getTime() - new Date().getTime()) / 1000);
+        tokenCookie.setPath("/");
+        response.addCookie(tokenCookie);
+        return jwtTokenResult;
     }
 
     @Override

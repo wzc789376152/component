@@ -1,10 +1,13 @@
 package com.github.wzc789376152.shiro.filter;
 
+import cn.hutool.core.codec.Base64Decoder;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.github.wzc789376152.service.IResponseService;
 import com.github.wzc789376152.shiro.properties.ShiroJwtProperty;
 import com.github.wzc789376152.shiro.properties.ShiroProperty;
+import com.github.wzc789376152.shiro.service.IJwtService;
 import com.github.wzc789376152.shiro.token.JwtToken;
+import com.github.wzc789376152.shiro.token.JwtTokenResult;
 import com.github.wzc789376152.utils.IpUtil;
 import com.github.wzc789376152.utils.JSONUtils;
 import com.github.wzc789376152.utils.TokenUtils;
@@ -23,6 +26,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Date;
 import java.util.List;
 
 
@@ -31,12 +35,14 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
 
     ShiroJwtProperty shiroJwtProperty;
     ShiroProperty shiroProperty;
+    IJwtService jwtService;
     IResponseService responseService;
 
-    public JwtFilter(ShiroJwtProperty shiroJwtProperty, ShiroProperty shiroProperty, IResponseService responseService) {
+    public JwtFilter(ShiroJwtProperty shiroJwtProperty, ShiroProperty shiroProperty, IJwtService jwtService, IResponseService responseService) {
         this.shiroJwtProperty = shiroJwtProperty;
         this.shiroProperty = shiroProperty;
         this.responseService = responseService;
+        this.jwtService = jwtService;
     }
 
     /**
@@ -61,20 +67,20 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
         boolean isLogin = false;
         boolean isTimeout = false;
         String token = null;
-        for (String key : keyArray) {
-            HttpServletRequest httpServletRequest = (HttpServletRequest) request;
-            token = httpServletRequest.getHeader(key);
-            if (token == null) {
-                Cookie[] cookies = ((HttpServletRequest) request).getCookies();
-                if (cookies != null) {
-                    for (Cookie cookie : cookies) {
-                        if (cookie.getName().equals(key)) {
-                            token = cookie.getValue();
-                            break;
-                        }
-                    }
+        String refreshToken = null;
+        HttpServletRequest httpServletRequest = (HttpServletRequest) request;
+        Cookie[] cookies = ((HttpServletRequest) request).getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if (cookie.getName().equals("jwt-token")) {
+                    token = cookie.getValue();
+                }
+                if (cookie.getName().equals("jwt-refreshToken")) {
+                    refreshToken = cookie.getValue();
                 }
             }
+        }
+        if (refreshToken != null) {
             if (token != null) {
                 JwtToken jwtToken = new JwtToken(token);
                 // 提交给realm进行登入，如果错误他会抛出异常并被捕获
@@ -86,9 +92,48 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
                         isTimeout = true;
                     }
                 }
+            } else {
+                isTimeout = true;
             }
-            if (isLogin) {
-                break;
+            if (isTimeout) {
+                JwtTokenResult jwtTokenResult = jwtService.refresh(refreshToken, (HttpServletResponse) response);
+                token = jwtTokenResult.getToken();
+                JwtToken jwtToken = new JwtToken(token);
+                // 提交给realm进行登入，如果错误他会抛出异常并被捕获
+                try {
+                    getSubject(request, response).login(jwtToken);
+                    isLogin = true;
+                } catch (AuthenticationException e) {
+                }
+            }
+        } else {
+            for (String key : keyArray) {
+                token = httpServletRequest.getHeader(key);
+                if (token == null) {
+                    if (cookies != null) {
+                        for (Cookie cookie : cookies) {
+                            if (cookie.getName().equals(key)) {
+                                token = cookie.getValue();
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (token != null) {
+                    JwtToken jwtToken = new JwtToken(token);
+                    // 提交给realm进行登入，如果错误他会抛出异常并被捕获
+                    try {
+                        getSubject(request, response).login(jwtToken);
+                        isLogin = true;
+                    } catch (AuthenticationException e) {
+                        if (e.getCause() instanceof TokenExpiredException) {
+                            isTimeout = true;
+                        }
+                    }
+                }
+                if (isLogin) {
+                    break;
+                }
             }
         }
         if (isLogin) {

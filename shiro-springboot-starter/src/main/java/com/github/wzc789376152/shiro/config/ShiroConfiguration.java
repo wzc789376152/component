@@ -12,6 +12,7 @@ import com.github.wzc789376152.shiro.realm.ShiroCodeRealm;
 import com.github.wzc789376152.shiro.realm.ShiroJwtRealm;
 import com.github.wzc789376152.shiro.realm.ShiroPasswordRealm;
 import com.github.wzc789376152.shiro.realm.UserModularRealmAuthenticator;
+import com.github.wzc789376152.shiro.service.IJwtService;
 import org.apache.shiro.authc.credential.HashedCredentialsMatcher;
 import org.apache.shiro.authc.pam.AtLeastOneSuccessfulStrategy;
 import org.apache.shiro.cache.CacheManager;
@@ -66,6 +67,8 @@ public class ShiroConfiguration {
     private ShiroJwtRealm shiroJwtRealm;
     @Autowired(required = false)
     private ShiroCodeRealm shiroCodeRealm;
+    @Autowired(required = false)
+    private IJwtService jwtService;
 
     @Bean("passwordRealm")
     public ShiroPasswordRealm shiroRealm() {
@@ -131,7 +134,7 @@ public class ShiroConfiguration {
         Map<String, String> filterChainDefinitionManager = new LinkedHashMap<String, String>();
         Map<String, Filter> filter = new LinkedHashMap<>(1);
         if (shiroJwtProperty != null && shiroJwtProperty.getEnable()) {
-            filter.put("jwt", new JwtFilter(shiroJwtProperty, shiroProperty, getResponseService()));
+            filter.put("jwt", new JwtFilter(shiroJwtProperty, shiroProperty, jwtService, getResponseService()));
         }
         if (shiroProperty.getUrlPers() != null && shiroProperty.getUrlPers().size() > 0) {
             for (int i = 0; i < shiroProperty.getUrlPers().size(); i++) {
