@@ -384,7 +384,7 @@ public class TaskCenterService implements ITaskCenterService {
         }
         fileService.submit(fileName);
 //        String url = fileService.getDownloadUrl(fileName);
-        Files.deleteIfExists(file.toPath());
+//        Files.deleteIfExists(file.toPath());
         return fileName;
     }
 
