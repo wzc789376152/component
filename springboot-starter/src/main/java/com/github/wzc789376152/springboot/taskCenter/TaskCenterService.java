@@ -253,8 +253,10 @@ public class TaskCenterService implements ITaskCenterService {
                                 excelWriter.write(batch, sheet);
                                 excelRowCount += batch.size();
                             }
+                            batch.clear();
                         }
                     }
+                    resultList.clear();
                 }
                 // 异步更新进度（任务项完成占总进度的一半）
                 final int progress = completedTasks * 90 / totalTasks;
