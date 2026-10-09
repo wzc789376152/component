@@ -22,7 +22,7 @@
     </profiles>
     <artifactId>springboot-starter</artifactId>
     <name>springboot-starter</name>
-    <version>2.3.9</version>
+    <version>2.4.0</version>
     <packaging>jar</packaging>
     <description>
         springboot-starter
