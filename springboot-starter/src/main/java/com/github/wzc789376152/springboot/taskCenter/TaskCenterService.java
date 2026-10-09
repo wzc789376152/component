@@ -298,6 +298,13 @@ public class TaskCenterService implements ITaskCenterService {
                     log.error("关闭BufferedOutputStream异常", e);
                 }
             }
+            if (excelFile != null) {
+                try {
+                    Files.deleteIfExists(excelFile.toPath());
+                } catch (IOException e) {
+                    log.error("删除临时文件异常", e);
+                }
+            }
         }
 
         log.info("任务结束: {}", title);
