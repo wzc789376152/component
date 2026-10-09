@@ -237,6 +237,7 @@ public class TaskCenterService implements ITaskCenterService {
                             bufferedOutputStream = new BufferedOutputStream(Files.newOutputStream(excelFile.toPath()));
                             excelWriter = EasyExcel.write(bufferedOutputStream)
                                     .excelType(ExcelTypeEnum.XLSX)
+                                    .inMemory(false)
                                     .build();
                         }
                         // 按每 10000 条记录分批写入，超过 100 万条记录换新 sheet

@@ -153,15 +153,18 @@ public class JwtServiceImpl implements IJwtService {
         host = host.replaceAll("http://", "");
         host = host.split(":")[0];
         String[] hostArray = host.split("\\.");
-        StringBuilder result = new StringBuilder();
+        String result = "";
         for (int i = 0; i < hostArray.length; i++) {
             if (i > 0) {
-                result.append(".").append(hostArray[i]);
+                result += "." + hostArray[i];
             }
         }
-        if (StringUtils.isEmpty(result.toString())) {
-            result = new StringBuilder(host);
+        if (StringUtils.isEmpty(result)) {
+            result = host;
         }
-        return result.toString();
+        if (result.startsWith(".")) {
+            result = result.substring(1);
+        }
+        return result;
     }
 }
