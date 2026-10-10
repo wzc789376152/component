@@ -109,16 +109,6 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
         } else {
             for (String key : keyArray) {
                 token = httpServletRequest.getHeader(key);
-                if (token == null) {
-                    if (cookies != null) {
-                        for (Cookie cookie : cookies) {
-                            if (cookie.getName().equals(key)) {
-                                token = cookie.getValue();
-                                break;
-                            }
-                        }
-                    }
-                }
                 if (token != null) {
                     JwtToken jwtToken = new JwtToken(token);
                     // 提交给realm进行登入，如果错误他会抛出异常并被捕获
@@ -135,10 +125,26 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
                     break;
                 }
             }
+            refreshToken = httpServletRequest.getHeader("refreshToken");
+            if (isTimeout) {
+                if (refreshToken != null) {
+                    JwtTokenResult jwtTokenResult = jwtService.refresh(refreshToken);
+                    token = jwtTokenResult.getToken();
+                    JwtToken jwtToken = new JwtToken(token);
+                    // 提交给realm进行登入，如果错误他会抛出异常并被捕获
+                    try {
+                        getSubject(request, response).login(jwtToken);
+                        isLogin = true;
+                    } catch (AuthenticationException e) {
+                    }
+
+                }
+            }
         }
         if (isLogin) {
             UserInfo userInfo = (UserInfo) getSubject(request, response).getPrincipal();
             userInfo.setToken(token);
+            userInfo.setRefreshToken(refreshToken);
             TokenUtils.setUserInfo(userInfo);
             return true;
         }

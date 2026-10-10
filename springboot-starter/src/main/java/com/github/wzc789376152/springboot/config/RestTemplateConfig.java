@@ -46,6 +46,7 @@ public class RestTemplateConfig {
             UserInfo userInfo = TokenUtils.getCurrentUser();
             if (userInfo != null) {
                 setToken(request, userInfo.getToken());
+                setRefreshToken(request, userInfo.getRefreshToken());
             }
             request.getHeaders().set("FeignResultFormat", "true");
             request.getHeaders().set("traceId", MDCUtils.get("traceId"));
@@ -61,6 +62,10 @@ public class RestTemplateConfig {
 
         private void setToken(HttpRequest request, String token) {
             request.getHeaders().set("token", token);
+        }
+
+        private void setRefreshToken(HttpRequest request, String refreshToken) {
+            request.getHeaders().set("refreshToken", refreshToken);
         }
 
     }

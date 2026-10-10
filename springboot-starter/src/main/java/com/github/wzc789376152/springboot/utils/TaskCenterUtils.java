@@ -1,14 +1,10 @@
 package com.github.wzc789376152.springboot.utils;
 
 
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
-import com.baomidou.mybatisplus.core.toolkit.LambdaUtils;
 import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
-import com.github.pagehelper.Page;
-import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.github.wzc789376152.exception.BizRuntimeException;
 import com.github.wzc789376152.springboot.config.SpringContextUtil;
@@ -18,11 +14,17 @@ import com.github.wzc789376152.springboot.config.taskCenter.TaskCenterProperties
 import com.github.wzc789376152.springboot.taskCenter.ITaskCenterManager;
 import com.github.wzc789376152.springboot.taskCenter.ITaskCenterService;
 import com.github.wzc789376152.springboot.taskCenter.TaskCenterService;
+import com.github.wzc789376152.springboot.taskCenter.dto.TaskCenterCallBackDto;
 import com.github.wzc789376152.springboot.taskCenter.dto.TaskCenterUpdateDto;
 import com.github.wzc789376152.springboot.taskCenter.entity.Taskcenter;
+import com.github.wzc789376152.springboot.taskCenter.function.TaskCenterCallbackFunction;
+import com.github.wzc789376152.springboot.taskCenter.function.TaskCenterFunction;
 import com.github.wzc789376152.springboot.taskCenter.mapper.TaskcenterMapper;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.Serializable;
+import java.lang.invoke.SerializedLambda;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -51,9 +53,8 @@ public class TaskCenterUtils {
             return this;
         }
 
-        public <I, R> Build func(SFunction<I, R> sFunction) {
-            this.funcName = LambdaUtils.extract(sFunction).getImplMethodName();
-            return this;
+        public <T, P1, R extends List<T>> Build func(TaskCenterFunction<T, P1, R> sFunction) {
+            return funcName(getMethodName(sFunction));
         }
 
         public Build callbackFuncName(String funcName) {
@@ -62,9 +63,8 @@ public class TaskCenterUtils {
         }
 
 
-        public <I, R> Build callbackFunc(SFunction<I, R> sFunction) {
-            this.callbackFuncName = LambdaUtils.extract(sFunction).getImplMethodName();
-            return this;
+        public <R extends TaskCenterCallBackDto> Build callbackFunc(TaskCenterCallbackFunction<R> taskCenterCallbackFunction) {
+            return callbackFuncName(getMethodName(taskCenterCallbackFunction));
         }
 
         public Build runUrl(String runUrl) {
@@ -207,5 +207,26 @@ public class TaskCenterUtils {
         }
         TaskcenterMapper taskcenterMapper = SpringContextUtil.getBean(TaskcenterMapper.class);
         taskcenterMapper.deleteById(id);
+    }
+
+    private static String getMethodName(Serializable sFunction) {
+        try {
+            // 1. 获取 Lambda 实例的 Class 对象
+            Class<?> clazz = sFunction.getClass();
+
+            // 2. 获取私有的 writeReplace 方法
+            // JVM 在编译可序列化的 Lambda 时，会自动注入这个方法
+            Method method = clazz.getDeclaredMethod("writeReplace");
+            method.setAccessible(true);
+
+            // 3. 调用 writeReplace，返回 SerializedLambda 对象
+            SerializedLambda serializedLambda = (SerializedLambda) method.invoke(sFunction);
+
+            // 4. 从 SerializedLambda 中获取实现方法的名称
+            return serializedLambda.getImplMethodName();
+
+        } catch (Exception e) {
+            throw new RuntimeException("无法解析 Lambda 方法名，请确保接口继承了 Serializable 且传入的是方法引用", e);
+        }
     }
 }

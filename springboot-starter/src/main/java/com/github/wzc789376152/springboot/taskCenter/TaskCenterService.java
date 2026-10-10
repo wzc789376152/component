@@ -15,6 +15,7 @@ import com.github.wzc789376152.springboot.config.init.InitPropertice;
 import com.github.wzc789376152.springboot.config.oss.AliyunOssConfig;
 import com.github.wzc789376152.springboot.config.oss.AliyunOssService;
 import com.github.wzc789376152.springboot.config.redis.IRedisService;
+import com.github.wzc789376152.springboot.taskCenter.dto.TaskCenterCallBackDto;
 import com.github.wzc789376152.springboot.taskCenter.dto.TaskCenterInitDto;
 import com.github.wzc789376152.springboot.taskCenter.dto.TaskCenterUpdateDto;
 import com.github.wzc789376152.springboot.taskCenter.entity.Taskcenter;
@@ -196,10 +197,10 @@ public class TaskCenterService implements ITaskCenterService {
         }
 
         log.info("开始执行任务: {}", title);
-        Map<String, Object> callbackMap = new HashMap<>();
-        callbackMap.put("taskId", taskId);
-        callbackMap.put("data", JSONUtils.toJSONString(params));
-        callbackMap.put("startTime", System.currentTimeMillis());
+        TaskCenterCallBackDto taskCenterCallBackDto = new TaskCenterCallBackDto();
+        taskCenterCallBackDto.setTaskId(taskId);
+        taskCenterCallBackDto.setData(JSONUtils.toJSONString(params));
+        taskCenterCallBackDto.setStartTime(System.currentTimeMillis());
 
         // 创建两个线程池：任务执行和任务进度更新
         ExecutorService taskExecutor = createExecutorService(16, 32, 100000, "taskCenterItem-handle-");
@@ -214,53 +215,106 @@ public class TaskCenterService implements ITaskCenterService {
         int excelRowCount = 0;
 
         try {
-            List<Future<Object>> futures = new ArrayList<>();
-            for (P param : params) {
-                futures.add(taskExecutor.submit(() -> method.invoke(service, param)));
-            }
-            int totalTasks = Math.max(futures.size(), 1);
-            int completedTasks = 0;
-
-            // 遍历各个任务执行结果
-            for (Future<Object> future : futures) {
-                Object result = future.get();
-                completedTasks++;
-
-                // 如果返回结果为 List，则写入 Excel
-                if (result instanceof List) {
-                    List<?> resultList = (List<?>) result;
-                    if (!resultList.isEmpty()) {
-                        // 延迟初始化 ExcelWriter（只在首次写入数据时初始化）
-                        if (!isExcelGenerated) {
-                            isExcelGenerated = true;
-                            excelFile = createExcelFile();
-                            bufferedOutputStream = new BufferedOutputStream(Files.newOutputStream(excelFile.toPath()));
-                            excelWriter = EasyExcel.write(bufferedOutputStream)
-                                    .excelType(ExcelTypeEnum.XLSX)
-                                    .inMemory(false)
-                                    .build();
-                        }
-                        // 按每 10000 条记录分批写入，超过 100 万条记录换新 sheet
-                        for (List<Object> batch : splitList((List<Object>) resultList, 10000)) {
-                            if (excelWriter != null) {
-                                if (excelRowCount >= 1_000_000) {
-                                    excelRowCount = 0;
-                                    sheetIndex++;
+            if (params.length == 1) {
+                Boolean isBreak = false;
+                Object lastObj = null;
+                while (!isBreak) {
+                    for (P param : params) {
+                        Object result = method.invoke(service, param, lastObj);
+                        if (result == null) {
+                            isBreak = true;
+                        } else {
+                            // 如果返回结果为 List，则写入 Excel
+                            if (result instanceof List) {
+                                List<?> resultList = (List<?>) result;
+                                if (!resultList.isEmpty()) {
+                                    lastObj = resultList.get(resultList.size() - 1);
+                                    // 延迟初始化 ExcelWriter（只在首次写入数据时初始化）
+                                    if (!isExcelGenerated) {
+                                        isExcelGenerated = true;
+                                        excelFile = createExcelFile();
+                                        bufferedOutputStream = new BufferedOutputStream(Files.newOutputStream(excelFile.toPath()));
+                                        excelWriter = EasyExcel.write(bufferedOutputStream)
+                                                .excelType(ExcelTypeEnum.XLSX)
+                                                .inMemory(false)
+                                                .build();
+                                    }
+                                    // 按每 10000 条记录分批写入，超过 100 万条记录换新 sheet
+                                    for (List<Object> batch : splitList((List<Object>) resultList, 10000)) {
+                                        if (excelWriter != null) {
+                                            if (excelRowCount >= 1_000_000) {
+                                                excelRowCount = 0;
+                                                sheetIndex++;
+                                            }
+                                            WriteSheet sheet = EasyExcel.writerSheet(sheetIndex, "sheet" + (sheetIndex + 1))
+                                                    .head(resultList.get(0).getClass())
+                                                    .build();
+                                            excelWriter.write(batch, sheet);
+                                            excelRowCount += batch.size();
+                                        }
+                                        batch.clear();
+                                    }
+                                } else {
+                                    isBreak = true;
                                 }
-                                WriteSheet sheet = EasyExcel.writerSheet(sheetIndex, "sheet" + (sheetIndex + 1))
-                                        .head(resultList.get(0).getClass())
-                                        .build();
-                                excelWriter.write(batch, sheet);
-                                excelRowCount += batch.size();
+                                resultList.clear();
+                            } else {
+                                isBreak = true;
                             }
-                            batch.clear();
                         }
+                        // 异步更新进度（任务项完成占总进度的一半）
+                        final int progress = 50;
+                        progressExecutor.submit(() -> updateTaskProgress(taskId, progress));
                     }
-                    resultList.clear();
                 }
-                // 异步更新进度（任务项完成占总进度的一半）
-                final int progress = completedTasks * 90 / totalTasks;
-                progressExecutor.submit(() -> updateTaskProgress(taskId, progress));
+            } else {
+                List<Future<Object>> futures = new ArrayList<>();
+                for (P param : params) {
+                    futures.add(taskExecutor.submit(() -> method.invoke(service, param, null)));
+                }
+                int totalTasks = Math.max(futures.size(), 1);
+                int completedTasks = 0;
+
+                // 遍历各个任务执行结果
+                for (Future<Object> future : futures) {
+                    Object result = future.get();
+                    completedTasks++;
+                    // 如果返回结果为 List，则写入 Excel
+                    if (result instanceof List) {
+                        List<?> resultList = (List<?>) result;
+                        if (!resultList.isEmpty()) {
+                            // 延迟初始化 ExcelWriter（只在首次写入数据时初始化）
+                            if (!isExcelGenerated) {
+                                isExcelGenerated = true;
+                                excelFile = createExcelFile();
+                                bufferedOutputStream = new BufferedOutputStream(Files.newOutputStream(excelFile.toPath()));
+                                excelWriter = EasyExcel.write(bufferedOutputStream)
+                                        .excelType(ExcelTypeEnum.XLSX)
+                                        .inMemory(false)
+                                        .build();
+                            }
+                            // 按每 10000 条记录分批写入，超过 100 万条记录换新 sheet
+                            for (List<Object> batch : splitList((List<Object>) resultList, 10000)) {
+                                if (excelWriter != null) {
+                                    if (excelRowCount >= 1_000_000) {
+                                        excelRowCount = 0;
+                                        sheetIndex++;
+                                    }
+                                    WriteSheet sheet = EasyExcel.writerSheet(sheetIndex, "sheet" + (sheetIndex + 1))
+                                            .head(resultList.get(0).getClass())
+                                            .build();
+                                    excelWriter.write(batch, sheet);
+                                    excelRowCount += batch.size();
+                                }
+                                batch.clear();
+                            }
+                        }
+                        resultList.clear();
+                    }
+                    // 异步更新进度（任务项完成占总进度的一半）
+                    final int progress = completedTasks * 90 / totalTasks;
+                    progressExecutor.submit(() -> updateTaskProgress(taskId, progress));
+                }
             }
 
             String url = "";
@@ -270,13 +324,13 @@ public class TaskCenterService implements ITaskCenterService {
                 url = uploadExcelFile(excelFile, title);
             }
             updateTaskCompletion(taskId, url);
-            callbackMap.put("success", true);
-            callbackMap.put("url", url);
+            taskCenterCallBackDto.setSuccess(true);
+            taskCenterCallBackDto.setUrl(url);
         } catch (Exception e) {
             log.error("任务失败", e);
             updateTaskFailure(taskId, e.getMessage());
-            callbackMap.put("success", false);
-            callbackMap.put("error", e.getMessage());
+            taskCenterCallBackDto.setSuccess(false);
+            taskCenterCallBackDto.setError(e.getMessage());
         } finally {
             // 优雅关闭线程池和释放锁
             taskExecutor.shutdown();
@@ -308,10 +362,10 @@ public class TaskCenterService implements ITaskCenterService {
         }
 
         log.info("任务结束: {}", title);
-        callbackMap.put("endTime", System.currentTimeMillis());
+        taskCenterCallBackDto.setEndTime(System.currentTimeMillis());
         if (this.callbackFunc != null) {
             try {
-                callbackFunc.invoke(service, callbackMap);
+                callbackFunc.invoke(service, taskCenterCallBackDto);
             } catch (IllegalAccessException | InvocationTargetException e) {
                 log.error("回调错误", e);
             }

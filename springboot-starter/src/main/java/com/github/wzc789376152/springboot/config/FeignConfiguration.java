@@ -25,6 +25,7 @@ public class FeignConfiguration implements RequestInterceptor {
         UserInfo userInfo = TokenUtils.getCurrentUser();
         if (userInfo != null) {
             setToken(requestTemplate, userInfo.getToken());
+            setRefreshToken(requestTemplate, userInfo.getRefreshToken());
         }
     }
 
@@ -36,6 +37,10 @@ public class FeignConfiguration implements RequestInterceptor {
 
     private void setToken(RequestTemplate requestTemplate, String token) {
         requestTemplate.header("token", token);
+    }
+
+    private void setRefreshToken(RequestTemplate requestTemplate, String refreshToken) {
+        requestTemplate.header("refreshToken", refreshToken);
     }
 
 }

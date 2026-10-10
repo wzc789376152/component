@@ -13,18 +13,19 @@
     <artifactId>common</artifactId>
     <version>${project.release.version}</version>
     <packaging>jar</packaging>
+    <name>common</name>
     <description>
         通用项目模块
     </description>
     <url>https://github.com/wzc789376152/component/tree/master/file</url>
     <properties>
-        <project.release.version>${wzc.common.version}</project.release.version>
+        <project.release.version>2.1.6</project.release.version>
     </properties>
     <profiles>
         <profile>
             <id>snapshot</id>
             <properties>
-                <project.release.version>${wzc.common.version}-SNAPSHOT</project.release.version>
+                <project.release.version>2.1.6-SNAPSHOT</project.release.version>
             </properties>
         </profile>
     </profiles>

@@ -28,5 +28,9 @@ public class UserInfo {
      * token
      */
     private String token;
+    /**
+     * 刷新token
+     */
+    private String refreshToken;
 }
 
